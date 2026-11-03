@@ -66,6 +66,7 @@ Umbriel only supports minimizing eligible floating windows. A dock minimize requ
 ```sh
 node sekaipop/tests/umbriel-test/umbriel_unit.js
 python3 sekaipop/tests/umbriel-test/config_test.py
+python3 sekaipop/tests/umbriel-test/request_test.py
 ```
 
 The adapter tests exercise actual service methods with a stub transport: multi-output workspace selectors, model identity, geometry, window actions, malformed replies and disconnect cleanup. Configuration tests cover include precedence, optional/missing includes, cycles and custom paths. Installer checks verify dry-run behavior, backups and preservation of the compositor config.
@@ -81,3 +82,7 @@ Original shell and assets: [Blapples/SekaiPop](https://github.com/Blapples/Sekai
 [umbriel/theme.example.toml](umbriel/theme.example.toml) starts the compositor theme integration with a commented palette mapping. The installer copies it to `~/.config/umbriel/sekaipop-theme.example.toml` for reference. It contains no active settings, is not included in the compositor config, and is not connected to the shell's theme service. No colors or appearance settings are changed.
 
 `install.sh --deps` can run the existing Arch dependency installer first; the default continues to install only the shell. Shader compilation now happens in staging before the current shell is replaced, and installed copies track the branch they were installed from.
+
+### Quickshell 0.3.2 socket compatibility
+
+Ordinary Umbriel actions use one short-lived connection per request through a Python helper, with actions processed serially. The persistent subscription remains a Quickshell socket. Its error handler lets Quickshell perform native cleanup instead of disconnecting again inside the error signal; this avoids a re-entrant cleanup path in Quickshell 0.3.2. Request tests use a mocked transport because this build environment does not permit UNIX sockets; live reconnect testing remains necessary.

@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.modules.common
 import "../modules/common/functions/UmbrielMath.js" as UM
 
 // One event stream owns compositor state. The shell-facing models retain object identity
@@ -33,6 +34,7 @@ Singleton {
     property var cache: ({})
     property var workspaceIds: ({})
     property int nextWorkspaceId: 0
+    property var actionQueue: []
     signal rawEvent(var event)
     signal actionError(string message)
 
@@ -124,9 +126,24 @@ Singleton {
         root.action("workspace-switch", { workspace: index, output: output })
     }
     function action(name, fields) {
-        if (!requests.connected) { root.actionError("Umbriel IPC is disconnected"); return }
-        requests.write(JSON.stringify(Object.assign({ cmd: "action", action: name }, fields || {})) + "\n")
-        requests.flush()
+        if (!root.connected) { root.actionError("Umbriel IPC is disconnected"); return }
+        if (root.actionQueue.length >= 128) { root.actionError("Too many queued Umbriel actions"); return }
+        root.actionQueue = root.actionQueue.concat([Object.assign({ cmd: "action", action: name }, fields || {})])
+        root.pumpRequests()
+    }
+    function pumpRequests() {
+        if (requester.running || root.actionQueue.length === 0) return
+        const request = root.actionQueue[0]
+        root.actionQueue = root.actionQueue.slice(1)
+        requester.exec(["python3", Directories.script("umbriel/request.py"), root.socketPath, JSON.stringify(request)])
+    }
+    function requestFinished(code, message) {
+        if (code !== 0) {
+            // A failed focus must not be followed by a move of some other focused window.
+            root.actionQueue = []
+            root.actionError(message.trim() || "Umbriel action failed")
+        }
+        Qt.callLater(root.pumpRequests)
     }
     // Legacy refresh hooks are intentionally empty: subscriptions already provide full snapshots.
     function refreshToplevels() {}
@@ -174,12 +191,13 @@ Singleton {
     }
     function clear() {
         root.connected = false; root.outputsSeen = false; root.windowsSeen = false
+        root.actionQueue = []
         root.windowSnapshot = []; root.workspaceSnapshot = []; root.outputSnapshot = []
         root.layerSnapshot = []; root.keyboardLayout = ({ names: [], current_index: 0 })
         root.rebuild()
     }
     Component.onCompleted: {
-        if (root.socketPath !== "") { events.connected = true; requests.connected = true }
+        if (root.socketPath !== "") { events.connected = true }
     }
     Socket {
         id: events
@@ -191,17 +209,18 @@ Singleton {
                 flush()
             } else { root.clear(); retry.restart() }
         }
-        onError: { connected = false; root.clear(); retry.restart() }
+        // Quickshell 0.3.2 cleans up its QLocalSocket after emitting error.
+        // Setting connected=false here re-enters cleanup and can dereference null.
+        onError: { root.clear(); retry.restart() }
         parser: SplitParser { onRead: data => root.consume(data) }
     }
-    Socket {
-        id: requests
-        path: root.socketPath
-        onConnectedChanged: { if (!connected) requestRetry.restart() }
-        onError: { connected = false; requestRetry.restart() }
-        parser: SplitParser { onRead: data => root.consume(data) }
+    // Umbriel closes ordinary IPC connections after one reply. A short-lived
+    // helper owns each request; serial execution also preserves focus/move order.
+    Process {
+        id: requester
+        stderr: StdioCollector { id: requestErrors }
+        onExited: (code, status) => root.requestFinished(code, requestErrors.text)
     }
     Timer { id: retry; interval: 1000; onTriggered: { if (root.socketPath !== "") events.connected = true } }
-    Timer { id: requestRetry; interval: 1000; onTriggered: { if (root.socketPath !== "") requests.connected = true } }
     onActionError: message => console.warn("Umbriel: " + message)
 }

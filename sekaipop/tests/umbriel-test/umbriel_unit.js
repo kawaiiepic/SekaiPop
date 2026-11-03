@@ -8,13 +8,14 @@ vm.runInContext(fs.readFileSync(base + '/modules/common/functions/UmbrielMath.js
 // Exercise the actual QML service methods with minimal Qt object/socket stand-ins.
 const source = fs.readFileSync(base + '/services/Compositor.qml', 'utf8');
 const root = { cache: {}, workspaceIds: {}, nextWorkspaceId: 0, outputSnapshot: [], workspaceSnapshot: [],
-  windowSnapshot: [], toplevels: {values: []}, workspaces: {values: []}, monitors: {values: []}, errors: [] };
+  windowSnapshot: [], connected: true, actionQueue: [], socketPath: "/fake/umbriel.sock", toplevels: {values: []}, workspaces: {values: []}, monitors: {values: []}, errors: [] };
 root.actionError = message => root.errors.push(message);
 root.rawEvent = () => {};
 const sent = [];
 const context = vm.createContext({root, UM: math, console,
   entry: {createObject: () => ({toplevels: {values: []}, destroy() {this.destroyed = true}})},
-  requests: {connected: true, write: text => sent.push(JSON.parse(text)), flush() {}}});
+  requester: {running: false, exec: args => sent.push(JSON.parse(args.at(-1)))},
+  Directories: {script: path => path}, Qt: {callLater: callback => callback()}});
 for (const match of source.matchAll(/^    function (\w+)\([^\n]*\) \{/gm)) {
   const start = match.index + 4;
   let end = source.indexOf('{', start), depth = 1;
@@ -65,6 +66,9 @@ root.consume('not json');
 assert.equal(root.toplevels.values.length, 1, 'malformed input does not erase state');
 root.consume('{"err":"refused"}');
 assert.equal(root.errors.at(-1), 'refused');
+root.actionQueue = [{action: 'window-move-to-workspace-silent'}];
+root.requestFinished(1, 'focus failed');
+assert.equal(root.actionQueue.length, 0, 'failed focus cancels dependent moves');
 root.clear();
 assert.equal(root.toplevels.values.length, 0);
 assert.equal(root.focusedMonitor, null);
