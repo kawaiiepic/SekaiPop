@@ -1,8 +1,7 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
-import Quickshell.Wayland
 import qs.services
+import Quickshell.Wayland
 import qs.modules.common
 import qs.modules.sekai.editMode
 
@@ -99,7 +98,7 @@ onWallpaperEnabledChanged: {
     // ===== Parallax =====
     readonly property bool parallaxOn: SettingsService.flag("wallpaper.parallax")
     readonly property real parallaxZoom: parallaxOn ? 1 + SettingsService.get("wallpaper.parallaxAmount") / 100 : 1
-    readonly property var hyprMonitor: win.screen ? Hyprland.monitorFor(win.screen) : null
+    readonly property var hyprMonitor: win.screen ? Compositor.monitorFor(win.screen) : null
     readonly property int workspaceId: hyprMonitor && hyprMonitor.activeWorkspace ? hyprMonitor.activeWorkspace.id : 1
     readonly property int workspaceCount: Math.max(2, SettingsService.get("wallpaper.parallaxWorkspaces"))
     // 0 .. 1 across the workspaces.
@@ -146,7 +145,7 @@ onWallpaperEnabledChanged: {
     readonly property bool videoPaused: win.videoPausedBase || win.videoEditing
 
     Connections {
-        target: Hyprland
+        target: Compositor
 
         function onRawEvent(event) {
             if (event.name === "fullscreen" || event.name === "workspace" || event.name === "workspacev2"
@@ -161,7 +160,7 @@ onWallpaperEnabledChanged: {
         interval: 150
         onTriggered: {
             if (videoLayer.active)
-                Hyprland.refreshWorkspaces()
+                Compositor.refreshWorkspaces()
         }
     }
 

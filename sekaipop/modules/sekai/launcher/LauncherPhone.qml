@@ -1,9 +1,8 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import "../../common/functions/PhoneMath.js" as PM
 import "../../common/functions/FlipMath.js" as FM
 import qs.modules.sekai.phone
@@ -145,7 +144,7 @@ Scope {
     property string wallpaperTarget: "desktop"
 
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s
@@ -572,7 +571,8 @@ Scope {
     }
 
     // ===== click away =====
-    HyprlandFocusGrab {
+    CompositorFocusGuard {
+        namespaces: ["sekaipop-launcherphone"]
         id: grab
         windows: [win]
         onCleared: root.close()
@@ -616,7 +616,7 @@ Scope {
         // compositor decides this window is focused (pointer over it / clicked),
         // so with the mouse elsewhere the search box got no keys. While the
         // launcher is open it owns the keyboard, like the Overview and cheat sheet.
-        WlrLayershell.keyboardFocus: root.open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: root.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
         anchors {
             left: true
             bottom: true

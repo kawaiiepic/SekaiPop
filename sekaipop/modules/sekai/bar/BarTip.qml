@@ -130,14 +130,13 @@ Item {
         repeat: true
         running: root.shown && root.text !== ""
         onTriggered: {
-            if (!cursorProbe.running)
-                cursorProbe.running = true
+            root.pointerOver = Date.now() - root.lastMove < 350
         }
     }
 
     Process {
         id: cursorProbe
-        command: ["hyprctl", "-j", "cursorpos"]
+        command: ["printf", "{}"]
         stdout: StdioCollector {
             onStreamFinished: root.checkPointer(text)
         }

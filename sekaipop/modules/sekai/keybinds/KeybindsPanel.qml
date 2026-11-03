@@ -1,8 +1,7 @@
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.sekai.settings
@@ -67,7 +66,7 @@ Scope {
 
     // ===== open / close =====
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s
@@ -213,8 +212,8 @@ Scope {
         if (entry !== undefined && entry.kind === "action") {
             root.select(entry.id)
         } else if (entry !== undefined) {
-            root.say(entry.name + " is a Hyprland shortcut. Change it in "
-                     + (KeybindService.mode === "lua" ? "keybinds.lua" : "your Hyprland config") + ".")
+            root.say(entry.name + " is a Umbriel shortcut. Change it in "
+                     + (KeybindService.mode === "lua" ? "keybinds.lua" : "your Umbriel config.toml") + ".")
         } else if (root.selectedId === "") {
             root.say(KB.showCombo(combo) + " is free. Pick an action, then Press keys.")
         }
@@ -758,7 +757,7 @@ Scope {
                                         anchors.verticalCenter: parent.verticalCenter
                                         elide: Text.ElideRight
                                         text: (root.wanted ? KB.showCombo(root.wanted) : "") + " is "
-                                              + (root.taken && root.taken.kind === "action" ? "on " : "Hyprland's: ")
+                                              + (root.taken && root.taken.kind === "action" ? "on " : "Umbriel's: ")
                                               + (root.taken ? root.taken.name : "")
                                         color: "#ffffff"
                                         font.family: root.mt.fontFamily
@@ -832,7 +831,7 @@ Scope {
                                     Text {
                                         width: parent.width
                                         wrapMode: Text.WordWrap
-                                        text: KeybindService.niri ? "Keys are niri's here" : "One line in your Hyprland config, and keys are yours to change"
+                                        text: KeybindService.configReadOnly ? "Umbriel owns your shortcuts" : "Umbriel owns your shortcuts"
                                         color: root.mt.pInk
                                         font.family: root.mt.fontFamily
                                         font.pixelSize: 28
@@ -842,8 +841,8 @@ Scope {
                                         width: parent.width
                                         wrapMode: Text.WordWrap
                                         lineHeight: 1.2
-                                        text: KeybindService.niri
-                                            ? "This panel changes Hyprland's binds, and the shell is running on niri. Set your keys in niri's own config, as `spawn \"qs\" \"-c\" \"sekaipop\" \"ipc\" \"call\" ...` binds."
+                                        text: KeybindService.configReadOnly
+                                            ? "Edit the [keybinds] section in your Umbriel config.toml."
                                             : "Changes made here are saved in a file of SekaiPop's, and your config doesn't load that file yet. Add this line to "
                                               + (KeybindService.mode === "lua" ? "hyprland.lua" : "hyprland.conf") + " once, and this panel switches on by itself:"
                                         color: root.mt.pInk
@@ -852,7 +851,7 @@ Scope {
                                         font.weight: Font.Bold
                                     }
                                     Rectangle {
-                                        visible: !KeybindService.niri
+                                        visible: !KeybindService.configReadOnly
                                         width: setupCode.implicitWidth + 36
                                         height: 40
                                         radius: 20
@@ -867,7 +866,7 @@ Scope {
                                         }
                                     }
                                     SlabButton {
-                                        visible: !KeybindService.niri
+                                        visible: !KeybindService.configReadOnly
                                         label: "Copy the line"
                                         fill: root.mt.accentCyan
                                         onClicked: Quickshell.execDetached(["sh", "-c", "printf '%s' \"$1\" | wl-copy", "sh", setup.line])

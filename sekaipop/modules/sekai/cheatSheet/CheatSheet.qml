@@ -1,9 +1,8 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import "CheatBinds.js" as CB
 import qs.modules.common
 import qs.modules.common.widgets
@@ -108,7 +107,7 @@ Scope {
 
     // ===== open / close =====
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s
@@ -180,7 +179,7 @@ Scope {
     // Binds only change on a config reload, so one read per open is enough.
     Process {
         id: getBinds
-        command: ["hyprctl", "-j", "binds"]
+        command: ["python3", Directories.script("umbriel/config.py"), "binds"]
         stdout: StdioCollector {
             id: bindsOut
             onStreamFinished: {
@@ -632,7 +631,7 @@ Scope {
                                         ? "No shell keybinds found.\nBind something to `qs -c sekaipop ipc call ...`"
                                         : root.hiddenCount > 0
                                             ? "Only minor keybinds found.\nTap \"+" + root.hiddenCount + " more\" above."
-                                            : "No keybinds found.\nAdd some to your Hyprland config.")
+                                            : "No keybinds found.\nAdd some to your Umbriel config.toml.")
                                     : "Nothing matches that."
                                 color: ScrapbookTheme.ink
                                 font.family: Theme.fontFamily

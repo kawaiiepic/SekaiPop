@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import "../modules/common/functions/FocusMath.js" as FM
 
 // Desktop Focus Mode: when you are using applications the desktop widgets go
@@ -31,10 +31,10 @@ import "../modules/common/functions/FocusMath.js" as FM
 //
 // WHERE THE FACTS COME FROM. Nothing new is opened and nothing is polled:
 //   - which windows exist, and which workspace each is on: Quickshell's own
-//     Hyprland models (Hyprland.toplevels / workspaces / monitors), which it keeps
+//     Hyprland models (Compositor.toplevels / workspaces / monitors), which it keeps
 //     current from the one event socket it already has
 //   - whether a window is floating (and mapped, pinned, fullscreen): Quickshell
-//     only learns that from `Hyprland.refreshToplevels()`, so that is called, on
+//     only learns that from `Compositor.refreshToplevels()`, so that is called, on
 //     the same socket (no hyprctl process), after the handful of events that can
 //     change it (openwindow, changefloatingmode, movewindowv2, fullscreen, pin).
 //     Quickshell does not react to changefloatingmode by itself.
@@ -115,7 +115,7 @@ Singleton {
     // ===== collecting the facts =====
     function gather() {
         const wins = []
-        const tl = Hyprland.toplevels.values
+        const tl = Compositor.toplevels.values
         for (let i = 0; i < tl.length; i++) {
             const t = tl[i]
             const o = t.lastIpcObject || {}
@@ -138,7 +138,7 @@ Singleton {
         }
 
         const mons = []
-        const ml = Hyprland.monitors.values
+        const ml = Compositor.monitors.values
         for (let i = 0; i < ml.length; i++) {
             const m = ml[i]
             const aw = m.activeWorkspace
@@ -231,9 +231,9 @@ Singleton {
         interval: 30
         onTriggered: {
             if (root.wantWindows)
-                Hyprland.refreshToplevels()
+                Compositor.refreshToplevels()
             if (root.wantMonitors)
-                Hyprland.refreshMonitors()
+                Compositor.refreshMonitors()
             root.wantWindows = false
             root.wantMonitors = false
             verifyTimer.restart()
@@ -247,14 +247,14 @@ Singleton {
             if (!root.again)
                 return
             root.again = false
-            Hyprland.refreshToplevels()
-            Hyprland.refreshMonitors()
+            Compositor.refreshToplevels()
+            Compositor.refreshMonitors()
             verifyTimer.restart()
         }
     }
 
     Connections {
-        target: Hyprland
+        target: Compositor
         enabled: root.enabled
 
         function onRawEvent(event) {
@@ -300,19 +300,19 @@ Singleton {
     // The model signals are what normally drive a recompute (answers to the refreshes
     // above land here too): the lists themselves ...
     Connections {
-        target: Hyprland.toplevels
+        target: Compositor.toplevels
         enabled: root.enabled
         function onValuesChanged() { root.schedule() }
     }
 
     Connections {
-        target: Hyprland.monitors
+        target: Compositor.monitors
         enabled: root.enabled
         function onValuesChanged() { root.schedule() }
     }
 
     Connections {
-        target: Hyprland.workspaces
+        target: Compositor.workspaces
         enabled: root.enabled
         function onValuesChanged() { root.schedule() }
     }
@@ -337,17 +337,17 @@ Singleton {
     }
 
     Instantiator {
-        model: root.enabled ? Hyprland.toplevels : null
+        model: root.enabled ? Compositor.toplevels.values : null
         delegate: watcher
     }
 
     Instantiator {
-        model: root.enabled ? Hyprland.monitors : null
+        model: root.enabled ? Compositor.monitors.values : null
         delegate: watcher
     }
 
     Instantiator {
-        model: root.enabled ? Hyprland.workspaces : null
+        model: root.enabled ? Compositor.workspaces.values : null
         delegate: watcher
     }
 

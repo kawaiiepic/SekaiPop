@@ -1,9 +1,8 @@
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
-import QtQuick
 import qs.services
+import QtQuick
 import qs.modules.common
 import qs.modules.common.widgets
 
@@ -71,10 +70,10 @@ Scope {
         readonly property real minSize: 4
 
         Component.onCompleted: {
-            HyprlandData.active = true
+            CompositorData.active = true
             grabber.exec(["sh", RegionService.script, "capture", win.screen.name, win.pic])
         }
-        Component.onDestruction: HyprlandData.active = false
+        Component.onDestruction: CompositorData.active = false
 
         Process {
             id: grabber
@@ -85,9 +84,9 @@ Scope {
         readonly property var windowRects: {
             if (!win.screen)
                 return []
-            const mon = Hyprland.monitorFor(win.screen)
+            const mon = Compositor.monitorFor(win.screen)
             const ws = mon && mon.activeWorkspace ? mon.activeWorkspace.id : -1
-            const list = (HyprlandData.windowList || []).filter(w => w.mapped !== false && w.workspace && w.workspace.id === ws)
+            const list = (CompositorData.windowList || []).filter(w => w.mapped !== false && !w.hidden && w.workspace && w.workspace.id === ws)
             // Floating windows are on top.
             list.sort((a, b) => (b.floating ? 1 : 0) - (a.floating ? 1 : 0))
             return list.map(w => ({ x: w.at[0] - win.screen.x, y: w.at[1] - win.screen.y, w: w.size[0], h: w.size[1] }))

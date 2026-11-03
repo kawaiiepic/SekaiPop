@@ -1,9 +1,8 @@
 pragma Singleton
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Io
 import QtQuick
-import qs.services
 import "functions/Framing.js" as FR
 
 // The avatar and banner pictures — picked by clicking them on the Quick
@@ -118,7 +117,7 @@ Singleton {
     function frame(kind, fresh, screenName) {
         if (FR.KINDS.indexOf(kind) < 0 || root.pathOf(kind) === "")
             return
-        root.framingScreen = screenName || (Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "")
+        root.framingScreen = screenName || (Compositor.focusedMonitor ? Compositor.focusedMonitor.name : "")
         root.framingFresh = fresh === true
         root.framing = kind
         root.framingSeq++
@@ -180,7 +179,7 @@ Singleton {
         if (picker.running)
             return
         picker.kind = kind
-        picker.screenName = screenName || (Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "")
+        picker.screenName = screenName || (Compositor.focusedMonitor ? Compositor.focusedMonitor.name : "")
         picker.running = true
     }
 

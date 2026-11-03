@@ -1,9 +1,8 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import "../../common/functions/PaletteMath.js" as PM
@@ -51,7 +50,7 @@ Scope {
     property bool copiedAll: false
 
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s

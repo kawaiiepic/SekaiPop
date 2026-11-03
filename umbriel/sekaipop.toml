@@ -1,0 +1,17 @@
+# Merge these entries into your Umbriel config.toml. Do not duplicate existing tables.
+# If general.autostart already exists, add the command to that list.
+[general]
+autostart = ["qs -c sekaipop"]
+
+[keybinds]
+"Mod" = "spawn qs -c sekaipop ipc call applauncher toggle"
+"Mod+A" = "spawn qs -c sekaipop ipc call quickpanel toggle"
+"Mod+I" = "overview-toggle"
+"Mod+Comma" = "spawn qs -c sekaipop ipc call settings page umbriel"
+"Mod+L" = "spawn qs -c sekaipop ipc call lock lock"
+"Print" = "spawn qs -c sekaipop ipc call region screenshot"
+
+[[layer_rule]]
+match.namespace = "^sekaipop-"
+blur = true
+blur_ignore_alpha = 0.5

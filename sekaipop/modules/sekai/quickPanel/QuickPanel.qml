@@ -1,9 +1,8 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import "../../common/functions/PhoneMath.js" as PM
 import "../../common/functions/FlipMath.js" as FM
 import "PhoneRoute.js" as PR
@@ -378,7 +377,7 @@ Scope {
     property double hotBlockedUntil: 0
 
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s
@@ -521,7 +520,7 @@ Scope {
             setRoute(PR.go(phoneRoute, kind))
             settingsOpen = true
             // What Hyprland says now, in case a reload or a hand edit changed it.
-            HyprlandSettings.refresh()
+            CompositorSettings.refresh()
             settingsExit.stop()
             stage.sPop = 1
             stage.sAlpha = 1
@@ -535,7 +534,7 @@ Scope {
                 targetScreen = screen
             setRoute(PR.open(kind))
             settingsOpen = true
-            HyprlandSettings.refresh()
+            CompositorSettings.refresh()
             settingsExit.stop()
             flipPrep.stop()
             flipAnim.stop()
@@ -1106,8 +1105,8 @@ Scope {
     // Quickshell.reload(true) is a hard reload (every window is rebuilt,
     // not reused), so it also clears out a window that got stuck.
     Process {
-        id: refreshHyprland
-        command: ["hyprctl", "reload"]
+        id: refreshCompositor
+        command: ["umbriel", "msg", "config-reload"]
         onExited: Quickshell.reload(true)
     }
 
@@ -1218,12 +1217,7 @@ Scope {
     // appid+name twice crashes the second one, so only one shell may run at a time.
     // onReleased alone decides nothing: the bind is a release bind (`release = true`),
     // and Hyprland is what drops it when Super was held for another key (issue #99).
-    GlobalShortcut {
-        appid: "quickshell"
-        name: "searchToggleRelease"
-        description: "Shell: Toggle search"
-        onReleased: root.toggleAppsOn(root.focusedScreen())
-    }
+
 
     // The old wallpaper picker board's name (it is gone: the Wallpapers are this
     // phone's landscape screen now). A keybind or the desktop menu that still says
@@ -1279,6 +1273,7 @@ Scope {
         }
 
         function page(name: string): void {
+            if (name === "umbriel") name = "hyprland"
             const f = sstage.face
             for (let i = 0; i < f.pages.length; i++) {
                 if (f.pages[i].id === name)
@@ -1748,7 +1743,8 @@ Scope {
         }
     }
 
-    HyprlandFocusGrab {
+    CompositorFocusGuard {
+        namespaces: ["sekaipop-quickpanel"]
         id: grab
         windows: root.grabList
         onCleared: {
@@ -1767,7 +1763,7 @@ Scope {
     // A transparent window over the whole screen, under the phone: any click on it
     // closes the launcher (the click itself is used up). It sits on the Top layer and
     // the phone's window is on Overlay while Apps is up, so the phone is always above it.
-    readonly property bool useCatcher: open && launching
+    readonly property bool useCatcher: open
 
     PanelWindow {
         id: catcher
@@ -2766,7 +2762,7 @@ Scope {
                         onTileRemoveRequested: index => root.source.removeTile(index)
                         onTileAddRequested: id => root.source.addTile(id)
                         onTileColumnsRequested: columns => root.source.setTileColumns(columns)
-                        onRefreshRequested: refreshHyprland.running = true
+                        onRefreshRequested: refreshCompositor.running = true
                         // The phone turns into the Settings where it stands.
                         onSettingsRequested: root.openSettings(root.targetScreen)
                         // claim() first: hideToast() makes toastActive false,

@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import qs.modules.common
 import "../modules/common/functions/ShelfDragMath.js" as SDM
 
@@ -714,10 +714,10 @@ Singleton {
     }
 
     // ===== opening and closing =====
-    readonly property bool usingLua: Hyprland.usingLua !== false
+    readonly property bool usingLua: Compositor.usingLua !== false
 
     function focusedScreenName() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return name
@@ -745,11 +745,11 @@ Singleton {
     // or not mapped (a minimised one) does not count. Read from Quickshell's own Hyprland
     // models, so the answer is there at once and nothing is spawned.
     function appsOn(name) {
-        const m = Hyprland.monitors.values.find(x => x.name === name)
+        const m = Compositor.monitors.values.find(x => x.name === name)
         const ws = m && m.activeWorkspace ? m.activeWorkspace.id : 0
         if (ws <= 0)
             return false
-        const tl = Hyprland.toplevels.values
+        const tl = Compositor.toplevels.values
         for (let i = 0; i < tl.length; i++) {
             const o = tl[i].lastIpcObject || {}
             if (!tl[i].workspace || tl[i].workspace.id !== ws)
@@ -856,82 +856,11 @@ Singleton {
     property string toggledSpecial: ""
 
     function dispatch(lua, classic) {
-        Hyprland.dispatch(root.usingLua ? lua : classic)
+        Compositor.dispatch(root.usingLua ? lua : classic)
     }
 
-    function park(name) {
-        root.savedWorkspace = 0
-        root.savedMonitor = ""
-        root.toggledSpecial = ""
-        root.holdWorkspace = 0
-        settle.stop()
-        probe.running = true
-    }
-
-    // `hyprctl -j clients` and `-j monitors` in one JSON document.
-    Process {
-        id: probe
-        command: ["sh", "-c", "printf '{\"c\":'; hyprctl -j clients; printf ',\"m\":'; hyprctl -j monitors; printf '}'"]
-        stdout: StdioCollector {
-            onStreamFinished: root.parkFrom(text)
-        }
-    }
-
-    function parkFrom(text) {
-        // Closed again before the answer came back.
-        if (!root.active || root.screenName === "")
-            return
-        try {
-            const d = JSON.parse(text)
-            const name = root.screenName
-            const m = (d.m || []).find(x => x.name === name)
-            if (!m)
-                return
-            const ws = m.activeWorkspace ? m.activeWorkspace.id : 0
-
-            // A special workspace (a scratchpad) shown over the desktop is
-            // closed first, the same way the lock does it.
-            const sp = m.specialWorkspace
-            if (sp && sp.id !== 0 && typeof sp.name === "string" && sp.name !== "") {
-                const clean = sp.name.startsWith("special:") ? sp.name.substring(8) : sp.name
-                root.toggledSpecial = clean
-                root.dispatch("hl.dsp.focus({ monitor = \"" + name + "\" })", "focusmonitor " + name)
-                root.dispatch("hl.dsp.workspace.toggle_special('" + clean + "')", "togglespecialworkspace " + clean)
-            }
-
-            if (!ws || ws < 0)
-                return
-            const busy = (d.c || []).some(w => w.workspace && w.workspace.id === ws && !w.pinned && w.mapped !== false)
-            if (!busy) {
-                root.holdWorkspace = ws
-                return
-            }
-            settle.restart()
-            root.savedWorkspace = ws
-            root.savedMonitor = name
-            root.dispatch("hl.dsp.focus({ monitor = \"" + name + "\" })", "focusmonitor " + name)
-            root.dispatch("hl.dsp.focus({ workspace = 'empty' })", "workspace empty")
-        } catch (e) {
-            console.log("EditMode: could not read hyprctl output: " + e)
-        }
-    }
-
-    function unpark() {
-        settle.stop()
-        root.holdWorkspace = 0
-        const ws = root.savedWorkspace
-        const name = root.savedMonitor
-        const sp = root.toggledSpecial
-        root.savedWorkspace = 0
-        root.savedMonitor = ""
-        root.toggledSpecial = ""
-        if (ws > 0 && name !== "") {
-            root.dispatch("hl.dsp.focus({ monitor = \"" + name + "\" })", "focusmonitor " + name)
-            root.dispatch("hl.dsp.focus({ workspace = " + ws + " })", "workspace " + ws)
-        }
-        if (sp !== "")
-            root.dispatch("hl.dsp.workspace.toggle_special('" + sp + "')", "togglespecialworkspace " + sp)
-    }
+    function park(name) { root.holdNow() }
+    function unpark() { root.holdWorkspace = 0 }
 
     // ===== keeping the workspace where it is =====
     property int holdWorkspace: 0
@@ -939,7 +868,7 @@ Singleton {
     function holdNow() {
         if (!root.active || root.screenName === "")
             return
-        const m = Hyprland.monitors.values.find(x => x.name === root.screenName)
+        const m = Compositor.monitors.values.find(x => x.name === root.screenName)
         const id = m && m.activeWorkspace ? m.activeWorkspace.id : 0
         root.holdWorkspace = id > 0 ? id : 0
     }
@@ -952,10 +881,10 @@ Singleton {
         onTriggered: root.holdNow()
     }
 
-    function onHyprlandEvent(event) {
+    function onCompositorEvent(event) {
         if (!root.active || root.holdWorkspace <= 0)
             return
-        const mon = Hyprland.focusedMonitor
+        const mon = Compositor.focusedMonitor
         if (event.name === "workspacev2") {
             // data: "<id>,<name>". Only the monitor being edited matters.
             if (!mon || mon.name !== root.screenName)
@@ -980,9 +909,9 @@ Singleton {
     }
 
     Connections {
-        target: Hyprland
+        target: Compositor
         function onRawEvent(event) {
-            root.onHyprlandEvent(event)
+            root.onCompositorEvent(event)
         }
     }
 

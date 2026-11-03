@@ -244,12 +244,12 @@ Scope {
         "mm=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -c MUTED)",
         "sv=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | sed -n 's/^Volume: \\([0-9.]*\\).*/\\1/p')",
         "mv=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | sed -n 's/^Volume: \\([0-9.]*\\).*/\\1/p')",
-        "nl=$(timeout 2 hyprctl hyprsunset temperature 2>/dev/null | head -n1)",
-        "gg=$(timeout 2 hyprctl hyprsunset gamma 2>/dev/null | head -n1)",
-        "gm=$( { timeout 2 hyprctl getoption animations:enabled; timeout 2 hyprctl getoption animations.enabled; } 2>/dev/null | sed -nE 's/^[[:space:]]*(int|bool|float): *//p' | head -n1 | cut -d' ' -f1)",
+        "nl=$(python3 \"" + Directories.script("umbriel/nightlight.py") + "\" status 2>/dev/null)",
+        "gg=100",
+        "gm=1",
         "gmm=$([ -f \"${XDG_RUNTIME_DIR:-/tmp}/sekaipop-gamemode\" ] && echo 1 || echo 0)",
         "ee=$(pgrep -x easyeffects >/dev/null 2>&1 && echo 1 || echo 0)",
-        "af=$( { timeout 2 hyprctl getoption decoration.screen_shader; timeout 2 hyprctl getoption decoration:screen_shader; } 2>/dev/null | sed -n 's/^[[:space:]]*str: //p' | head -n1)",
+        "af=",
         "printf 'wifi=%s\\nssid=%s\\neth=%s\\nbt=%s\\nbtdev=%s\\nsinkmuted=%s\\nsrcmuted=%s\\nsinkvol=%s\\nsrcvol=%s\\nnl=%s\\ngg=%s\\ngm=%s\\ngmm=%s\\nee=%s\\naf=%s\\n' \"$w\" \"$s\" \"$e\" \"$b\" \"$d\" \"$sm\" \"$mm\" \"$sv\" \"$mv\" \"$nl\" \"$gg\" \"$gm\" \"$gmm\" \"$ee\" \"$af\""
     ].join("\n")
 
@@ -454,30 +454,8 @@ Scope {
     // Gamma bar: same optimistic-set-then-debounce shape as brightness
     // below, through hyprsunset (started first if nothing's running it —
     // same trick as Night Light).
-    function setGamma(percent) {
-        actionGen++
-        root.gamma = Math.max(root.gammaMin, Math.min(100, Math.round(percent)))
-        settleGamma.restart()
-    }
-
-    Timer {
-        id: settleGamma
-        interval: 80
-        onTriggered: {
-            if (gammaAction.running)
-                settleGamma.restart()
-            else
-                gammaAction.running = true
-        }
-    }
-
-    Process {
-        id: gammaAction
-        command: ["sh", "-c",
-            "pidof hyprsunset >/dev/null || { setsid hyprsunset >/dev/null 2>&1 & sleep 0.6; }; hyprctl hyprsunset gamma "
-            + Math.round(root.gamma)]
-        onExited: root.refreshSoon()
-    }
+    // Umbriel has no hyprsunset gamma IPC. Hardware brightness remains available.
+    function setGamma(percent) {}
 
     // Same optimistic-set-then-debounce shape as setSpeakerVolume/
     // setMicrophoneVolume below, just working in raw device units
@@ -729,10 +707,12 @@ Scope {
 
     Process {
         id: nightLightAction
-        command: ["sh", "-c", root.nightLightOn
-            ? "pidof hyprsunset >/dev/null || { setsid hyprsunset >/dev/null 2>&1 & sleep 0.6; }; hyprctl hyprsunset temperature " + root.nightLightTemperature
-            : "hyprctl hyprsunset temperature " + root.nightLightMaxKelvin]
-        onExited: root.refreshSoon()
+        command: ["python3", Directories.script("umbriel/nightlight.py")].concat(
+            root.nightLightOn ? ["set", String(root.nightLightTemperature)] : ["off"])
+        onExited: (code, status) => {
+            if (code !== 0) Quickshell.execDetached(["notify-send", "Night Light", "Could not start wlsunset. Check that it is installed and no other color manager is running."])
+            root.refreshSoon()
+        }
     }
 
     readonly property string nightLightScript: Directories.script("state/nightlight-state.sh")
@@ -1051,18 +1031,10 @@ Scope {
     // needs one line:  pcall(require, "sekaipop_overrides")
     // The state is read back from Hyprland, so a reload that drops it shows
     // up as OFF.
-    readonly property string antiFlashbangScript: Directories.script("hyprland/antiflashbang-state.sh")
     readonly property var antiFlashbangNames: ["off", "weak", "strong"]
 
     function toggleAntiFlashbang() {
-        if (antiFlashbangAction.running)
-            return
-        actionGen++
-        antiFlashbangLevel = (antiFlashbangLevel + 1) % 3
-        antiFlashbangOn = antiFlashbangLevel > 0
-        antiFlashbangAction.command = ["sh", root.antiFlashbangScript,
-                                       root.antiFlashbangNames[root.antiFlashbangLevel]]
-        antiFlashbangAction.running = true
+        Quickshell.execDetached(["notify-send", "SekaiPop", "Configure screen effects in Umbriel's [effects] settings."])
     }
 
     Process {
@@ -1983,7 +1955,7 @@ Scope {
         // Asks every open window's program to quit, waits a moment, then
         // ends the Hyprland session (see the script for the details). Swap
         // the script's last line for your own compositor's equivalent if this
-        // isn't running under Hyprland.
+        // isn't running under Compositor.
         command: ["sh", Directories.script("system/session-logout.sh")]
     }
 

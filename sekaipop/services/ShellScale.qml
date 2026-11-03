@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import qs.modules.common
 
 // One size knob per monitor for the whole shell.
@@ -139,7 +139,7 @@ Singleton {
     // "focused" -> the focused output's name; anything else passes through.
     function resolveName(monitor) {
         if (monitor === "focused")
-            return Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+            return Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         return monitor
     }
 

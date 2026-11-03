@@ -1,7 +1,6 @@
 import Quickshell
-import Quickshell.Hyprland
-import QtQuick
 import qs.services
+import QtQuick
 import qs.modules.common.widgets
 
 // The tray's popup layer — two PopupWindows under the bar:
@@ -448,7 +447,7 @@ Scope {
         onTriggered: grab.active = root.grabWanted
     }
 
-    HyprlandFocusGrab {
+    CompositorFocusGuard {
         id: grab
         windows: [popup, menuPopup, root.parentWindow]
         onCleared: {
@@ -459,6 +458,7 @@ Scope {
 
     // The dropdown: just the capsule.
     PopupWindow {
+        grabFocus: true
         id: popup
 
         visible: (root.open || root.dropReveal > 0.001) && root.parentWindow !== null
@@ -560,6 +560,7 @@ Scope {
     // belongs to. Same width whatever the menu holds, so the card sits in
     // the middle of it and the window never has to widen.
     PopupWindow {
+        grabFocus: true
         id: menuPopup
 
         visible: (root.menuReady || root.menuLeaving) && root.menuItem !== null && root.parentWindow !== null

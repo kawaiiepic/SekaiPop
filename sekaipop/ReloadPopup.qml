@@ -1,8 +1,7 @@
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
@@ -43,7 +42,7 @@ Scope {
     readonly property int gap: 14
 
     function focusedMonitorName() {
-        return Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        return Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
     }
 
     function showOk() {

@@ -33,7 +33,7 @@ Item {
     // Total footprint (same as the Brightness slider it replaces).
     property real sliderWidth: 514
     // How much of the track is gamma.
-    property real gammaWidth: 176
+    property real gammaWidth: 0
 
     signal gammaMoved(real value)
     signal brightnessMoved(real value)
@@ -61,6 +61,7 @@ Item {
     // ===== headers =====
     Item {
         id: gammaHead
+        visible: false
         x: root.edge
         width: root.gammaWidth - 12
         height: 32
@@ -163,6 +164,7 @@ Item {
 
         // where gamma ends and brightness begins
         Rectangle {
+            visible: false
             x: root.gammaWidth - 1.5
             y: -3
             width: 3
