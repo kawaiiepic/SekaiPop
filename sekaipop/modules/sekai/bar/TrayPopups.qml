@@ -557,8 +557,9 @@ Scope {
 
     // The right-click menu. Its own window, mapped once the entries are
     // in (menuReady), centered under the tray button / pinned icon it
-    // belongs to. Same width whatever the menu holds, so the card sits in
-    // the middle of it and the window never has to widen.
+    // belongs to. Entries settle before mapping, so reserve the actual card
+    // width: an invisible max-width box would move narrow menus away from
+    // their icons when the compositor constrains the popup to the screen.
     PopupWindow {
         grabFocus: true
         id: menuPopup
@@ -603,7 +604,7 @@ Scope {
         onVisibleChanged: console.log("[tray] menu popup " + (visible ? "shown" : "hidden")
             + (visible ? " " + implicitWidth + "x" + implicitHeight : ""))
 
-        implicitWidth: Math.max(1, Math.ceil((menuCard.maxWidth + root.menuPadL + root.menuPadR) * root.uiScale))
+        implicitWidth: Math.max(1, Math.ceil((menuCard.width + root.menuPadL + root.menuPadR) * root.uiScale))
         implicitHeight: Math.max(1, Math.ceil((menuCard.height + root.menuPadT + root.menuPadB) * root.uiScale))
         color: "transparent"
 
@@ -615,12 +616,8 @@ Scope {
                 id: menuCard
 
                 capRim: root.capsuleStyle
-                // Centred under the icon on a flat bar. The window is always as wide as the
-                // widest menu there could be, so beside a standing bar the card goes against
-                // the bar's side of it: centred, it hung about 70 px away from the bar.
-                x: root.menuPadL + (root.parentWindow && root.parentWindow.vertical
-                    ? (root.barEdge === "right" ? maxWidth - width : 0)
-                    : (maxWidth - width) / 2)
+                // The popup fits the card itself, including its shadow/animation bleed.
+                x: root.menuPadL
                 y: root.menuPadT
 
                 // Grows from its own middle (the card sits right under
