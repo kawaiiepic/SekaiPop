@@ -384,6 +384,7 @@ Item {
                 fileModified: 0,
                 engine: true,
                 engineId: it.id,
+                previewCandidates: prevs,
                 previewPath: prevs.length ? prevs[0] : ""
             })
         }
@@ -465,7 +466,9 @@ Item {
         {
             const it = face.matched[k]
             // Engine packages are folders; show preview.* in the viewer.
-            face.viewPath = (it && it.engine && it.previewPath) ? it.previewPath : (it ? it.filePath : "")
+            face.viewPath = it && it.engine
+                ? ((it.previewCandidates || [])[0] || it.previewPath || "")
+                : (it ? it.filePath : "")
             face.viewName = it ? it.fileName : ""
         }
         face.nearEnd(k)
@@ -1036,11 +1039,13 @@ Item {
                         NumberAnimation { from: 0.55; to: 1; duration: 700; easing.type: Easing.InOutSine }
                     }
 
-                    Image {
+                    WallpaperPreview {
                         id: thumb
 
                         anchors.fill: parent
-                        source: cell.wh ? cell.wh.thumb : WallpaperService.thumbUrl(cell.path)
+                        previewEntry: cell.modelData
+                        fallbackSource: previewEntry && previewEntry.engine ? ""
+                            : (cell.wh ? cell.wh.thumb : WallpaperService.thumbUrl(cell.path))
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         // Decoded as dense as the screen it lands in (the phone's
@@ -1589,12 +1594,19 @@ Item {
                     asynchronous: true
                 }
 
-                Image {
+                WallpaperPreview {
                     id: bigPicture
 
                     anchors.fill: parent
-                    source: face.viewPath === "" ? (face.viewWh ? face.viewWh.full : "")
-                            : (face.viewIsVideo ? WallpaperService.thumbUrl(face.viewPath) : "file://" + face.viewPath)
+                    previewEntry: face.viewIndex >= 0 && face.viewIndex < face.matched.length
+                        ? face.matched[face.viewIndex] : null
+                    fallbackSource: previewEntry && previewEntry.engine ? ""
+                        : (face.viewPath === "" ? (face.viewWh ? face.viewWh.full : "")
+                            : (face.viewIsVideo ? WallpaperService.thumbUrl(face.viewPath) : "file://" + face.viewPath))
+                    onPreviewPathChanged: {
+                        if (previewEntry && previewEntry.engine)
+                            face.viewPath = previewPath
+                    }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     // As dense as the screen it lands in (was a fixed 1680 x 1050,
