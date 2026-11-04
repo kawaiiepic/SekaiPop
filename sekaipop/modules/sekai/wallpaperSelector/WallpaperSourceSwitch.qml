@@ -4,33 +4,34 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
-// Where the gallery's pictures come from: My folder | Wallhaven (WallhavenService.qml).
+// Where the gallery's pictures come from: My folder | Wallhaven | Engine.
 // In the header, beside the "Wallpapers" title; Ctrl+Tab flips it too (WallpaperFace.qml).
 //
 // The same pill as WallpaperTargetSwitch (outline, hard shadow, a thumb that slides and
 // overshoots a little), but each half is as wide as the wider label needs, so nothing
 // is cut whatever the font.
 //
-// Pure UI: it only says picked("folder") / picked("wallhaven").
+// Pure UI: it only says picked("folder") / picked("wallhaven") / picked("engine").
 Item {
     id: root
 
     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
     readonly property var mt: Theme.of(QsWindow.window)
 
-    property string current: "folder"      // "folder" | "wallhaven"
+    property string current: "folder"      // "folder" | "wallhaven" | "engine"
     signal picked(string id)
 
     readonly property var choices: [
         { id: "folder", label: "My folder", icon: "folder" },
-        { id: "wallhaven", label: "Wallhaven", icon: "travel_explore" }
+        { id: "wallhaven", label: "Wallhaven", icon: "travel_explore" },
+        { id: "engine", label: "Engine", icon: "movie" }
     ]
-    readonly property int currentIndex: root.current === "wallhaven" ? 1 : 0
+    readonly property int currentIndex: root.current === "wallhaven" ? 1 : (root.current === "engine" ? 2 : 0)
 
     // icon 20 + gap 7 + the label, 16 each side
-    readonly property real slot: Math.ceil(Math.max(m0.width, m1.width) + 20 + 7 + 32)
+    readonly property real slot: Math.ceil(Math.max(m0.width, m1.width, m2.width) + 20 + 7 + 32)
 
-    width: 2 * root.slot + 6
+    width: root.choices.length * root.slot + 6
     height: 40
 
     TextMetrics {
@@ -44,6 +45,11 @@ Item {
     TextMetrics {
         id: m1
         text: root.choices[1].label
+        font: m0.font
+    }
+    TextMetrics {
+        id: m2
+        text: root.choices[2].label
         font: m0.font
     }
 
