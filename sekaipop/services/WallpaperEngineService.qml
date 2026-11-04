@@ -113,16 +113,19 @@ Singleton {
         }
     }
 
+    // Most workshop packages ship preview.jpg (project.json "preview");
+    // gif/png/webp are less common. Callers try previewCandidates() in order
+    // and advance on Image.Error — we cannot stat() from pure QML here.
     function previewPathFor(folderPath) {
         if (!folderPath)
             return ""
-        return folderPath + "/preview.gif"
+        return folderPath + "/preview.jpg"
     }
 
     function previewCandidates(folderPath) {
         if (!folderPath)
             return []
-        return ["preview.gif", "preview.jpg", "preview.jpeg", "preview.png", "preview.webp"]
+        return ["preview.jpg", "preview.jpeg", "preview.png", "preview.webp", "preview.gif"]
             .map(n => folderPath + "/" + n)
     }
 
