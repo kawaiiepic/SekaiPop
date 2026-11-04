@@ -229,6 +229,13 @@ Singleton {
         "wallpaper.mpvpaper": true,
         "wallpaper.videoPause": "fullscreen",
         "wallpaper.videoResume": "pause",
+        // Wallpaper Engine selection and renderer configuration must be registered
+        // here: set() and restore() intentionally reject unknown settings.
+        "wallpaper.engine.active": false,
+        "wallpaper.engine.currentId": "",
+        "wallpaper.engine.currentPath": "",
+        "wallpaper.engine.workshopPath": "",
+        "wallpaper.engine.flags": "",
         "wallpaper.randomMinutes": 0,   // change to a random wallpaper every N minutes (0 = never)
         "wallpaper.parallax": false,    // the wallpaper drifts with the workspace
         "wallpaper.parallaxAmount": 8,  // how much bigger than the screen it is (%)

@@ -53,3 +53,46 @@ assert.equal(f.root.active,false);
 f.root.restoreIfNeeded();
 assert.equal(f.launches(),1,'stop cancels pending restore');
 console.log('Engine lifecycle: all startup orders, one-shot restore, custom paths, explicit picks and stop passed');
+
+// Exercise the actual settings allowlist and persistence methods as well as
+// the lifecycle. A permissive settings mock hid unregistered Engine keys.
+const settingsSource = fs.readFileSync(path.resolve(__dirname, '../../services/SettingsService.qml'), 'utf8');
+const defaults = vm.runInNewContext(settingsSource.match(/readonly property var defaults: (\(\{[\s\S]*?\}\))/)[1]);
+function realSettings() {
+    const root = {defaults, values: {}, loaded: true, touched: false};
+    const saver = {save: text => { saver.text = text; }};
+    const context = vm.createContext({root, saver, console});
+    for (const name of ['get', 'set', 'restore']) {
+        const start = settingsSource.indexOf('    function ' + name + '(') + 4;
+        let end = settingsSource.indexOf('{', start), depth = 1;
+        while (depth) { ++end; if (settingsSource[end] === '{') depth++; else if (settingsSource[end] === '}') depth--; }
+        vm.runInContext(settingsSource.slice(start, end + 1) + '\nroot.' + name + ' = ' + name, context);
+    }
+    root.flag = key => !!root.get(key);
+    return {root, saver};
+}
+const first = realSettings();
+const selected = fixture();
+selected.settings.set = first.root.set;
+// setWallpaper uses this object through the fixture's settings binding.
+selected.root.setWallpaper('/custom Steam library/431960/123', 'Saved Engine');
+first.root.set('wallpaper.engine.workshopPath', '/custom Steam library/431960');
+first.root.set('wallpaper.engine.flags', '--fps 24');
+const restarted = realSettings();
+restarted.root.restore(first.saver.text);
+for (const [key, value] of Object.entries({active:true, currentId:'123',
+    currentPath:'/custom Steam library/431960/123', workshopPath:'/custom Steam library/431960', flags:'--fps 24'}))
+    assert.equal(restarted.root.get('wallpaper.engine.' + key), value);
+const restored = fixture();
+restored.settings.loaded = true;
+restored.settings.get = restarted.root.get;
+restored.settings.flag = restarted.root.flag;
+restored.wallpaper.ready = true;
+restored.root.workshopPath = restarted.root.get('wallpaper.engine.workshopPath');
+restored.root.restoreIfNeeded();
+assert.equal(restored.launches(), 1, 'persisted Engine selection launches after restart');
+assert.equal(restored.process.lastCommand.at(-1), '/custom Steam library/431960/123');
+first.root.set('wallpaper.engine.active', false);
+restarted.root.restore(first.saver.text);
+assert.equal(restarted.root.flag('wallpaper.engine.active'), false, 'stop remains persisted');
+console.log('Engine settings: real allowlist, save/reload, restart launch and stop passed');
