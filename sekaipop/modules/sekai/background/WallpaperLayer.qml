@@ -1,1 +1,1 @@
-@/tmp/sekaipop-we/WallpaperLayer.qml
+file:///tmp/sekaipop-we/WallpaperLayer.qml
