@@ -1,0 +1,42 @@
+newmtl shell
+Kd .055 .065 .085
+Ks 0.1 0.1 0.1
+Ns 40
+illum 2
+newmtl metal
+Kd .13 .15 .19
+Ks 0.25 0.25 0.25
+Ns 40
+illum 2
+newmtl rubber
+Kd .015 .02 .03
+Ks 0 0 0
+Ns 40
+illum 2
+newmtl rim
+Kd .24 .28 .35
+Ks 0.35 0.35 0.35
+Ns 40
+illum 2
+newmtl keycap
+Kd .075 .085 .11
+Ks 0.1 0.1 0.1
+Ns 40
+illum 2
+newmtl steel
+Kd .32 .36 .43
+Ks 0.6 0.6 0.6
+Ns 40
+illum 2
+newmtl pink
+Kd .6 .25 .43
+Ks 0.2 0.2 0.2
+Ns 40
+illum 2
+Ke .6 .25 .43
+newmtl blue
+Kd .27 .45 .65
+Ks 0.2 0.2 0.2
+Ns 40
+illum 2
+Ke .27 .45 .65

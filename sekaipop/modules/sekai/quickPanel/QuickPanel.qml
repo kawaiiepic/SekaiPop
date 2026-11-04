@@ -1878,13 +1878,14 @@ Scope {
         WlrLayershell.keyboardFocus: root.deckActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         anchors.bottom: true
         margins.bottom: 18
-        readonly property real fit: Math.max(0.1, Math.min(1, ((screen ? screen.width : 1200) - 36) / 1100,
-            ((screen ? screen.height : 800) - 90) / 670))
-        implicitWidth: Math.ceil(1100 * fit)
-        implicitHeight: Math.ceil(670 * fit)
+        readonly property real fit: Math.max(0.1, Math.min(1, ((screen ? screen.width : 1200) - 36) / 1240,
+            ((screen ? screen.height : 800) - 90) / 820))
+        implicitWidth: Math.ceil(1240 * fit)
+        implicitHeight: Math.ceil(820 * fit)
         mask: Region { item: deck }
-        CyberdeckFace {
+        CyberdeckViewport {
             id: deck
+            active: deckWindow.visible
             scale: deckWindow.fit
             transformOrigin: Item.TopLeft
             y: (1 - deckWindow.deckLift) * deckWindow.height

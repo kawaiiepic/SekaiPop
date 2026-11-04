@@ -4,6 +4,7 @@ import QtQuick.Layouts
 // Pure UI: the window supplies existing services; no duplicate state or commands.
 Rectangle {
     id: deck
+    property bool modelMode: false
     required property var source
     property var media: null
     property var resources: null
@@ -17,8 +18,8 @@ Rectangle {
     signal dismissRequested(string key)
     width: 1100; height: 670
     radius: 18
-    color: "#191c24"
-    border.color: "#596170"; border.width: 2
+    color: modelMode ? "transparent" : "#191c24"
+    border.color: "#596170"; border.width: modelMode ? 0 : 2
 
     component Label: Text {
         color: "#c6ccd8"; font.family: "monospace"; font.pixelSize: 12
@@ -29,7 +30,7 @@ Rectangle {
     component Card: Rectangle { color: "#0c1018"; border.color: "#303541"; radius: 5 }
 
     Repeater {
-        model: 4
+        model: deck.modelMode ? 0 : 4
         Rectangle {
             required property int index
             x: index % 2 === 0 ? 13 : deck.width - 25

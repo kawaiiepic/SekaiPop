@@ -94,6 +94,17 @@ and the power menu still use their existing screens in this first implementation
 The notification alert and hot-edge peek also retain their existing presentation.
 The deck does not change saved widget positions or your wallpaper.
 
+The deck now uses a real, original OBJ/MTL chassis in a Qt Quick 3D perspective
+scene (18° pitch, −16° yaw), including raised keycaps, screen rails, rear shell,
+vent slots, ports and screws. The interactive face follows the camera transform;
+Qt maps clicks, dragging and typing to the controls. **Qt Quick 3D and
+QtQuick3D.AssetUtils**, matching your Qt version, are needed for the model. Run
+`./check-deps.sh` to check the modules. If they are unavailable the deck shows an
+explicit dependency notice and its flat controls; Default can still load.
+The scene unloads when closed. The editable model and reproducible Python builder
+live in `sekaipop/assets/models/cyberdeck/`; no asset conversion is needed at install.
+
+
 This skin changes SekaiPop itself; it does not change Umbriel, GTK/Qt applications,
 your wallpaper, or their saved theme settings. No extra fonts or shader compilation
 are required. Circular artwork, avatars and status indicators keep their shapes.

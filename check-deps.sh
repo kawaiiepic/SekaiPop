@@ -175,6 +175,8 @@ else
 fi
 qml 1 QtMultimedia qt6-multimedia pac "video wallpaper"
 qml 1 QtQuick/Effects qt6-declarative pac "MultiEffect, Qt 6.5+"
+qml 2 QtQuick3D qt6-quick3d pac "Cyberpunk 3D cyberdeck"
+qml 2 QtQuick3D/AssetUtils qt6-quick3d pac "cyberdeck OBJ model loading"
 qml 1 QtQuick/Shapes qt6-declarative pac
 qml 1 Qt/labs/folderlistmodel qt6-declarative pac
 QT_CHECKED=0
