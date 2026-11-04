@@ -128,11 +128,17 @@ Item {
     readonly property bool lockMode: WallpaperService.separateLock && face.target === "lock"
 
     // What is on this monitor right now.
-    readonly property string desktopPath: WallpaperService.pathFor(face.screenName)
+    readonly property string desktopPath: WallpaperEngineService.active
+        ? WallpaperEngineService.currentPath : WallpaperService.pathFor(face.screenName)
     readonly property string lockPath: WallpaperService.lockPathFor(face.screenName)
     readonly property string currentPath: face.lockMode ? face.lockPath : face.desktopPath
     readonly property string otherPath: !WallpaperService.separateLock ? ""
                                         : (face.lockMode ? face.desktopPath : face.lockPath)
+
+    // The viewer renders an Engine preview image, but applied-state checks
+    // must compare the package folder used for playback, not preview.jpg.
+    readonly property string viewedWallpaperPath: face.viewIndex >= 0 && face.viewIndex < face.matched.length
+        && face.matched[face.viewIndex].engine ? face.matched[face.viewIndex].filePath : face.viewPath
 
     readonly property bool viewIsVideo: face.viewPath !== "" && WallpaperService.isVideo(face.viewPath)
 
@@ -1828,7 +1834,7 @@ Item {
                 spacing: 10
 
                 Rectangle {
-                    visible: face.viewPath !== "" && face.viewPath === face.desktopPath
+                    visible: face.viewedWallpaperPath !== "" && face.viewedWallpaperPath === face.desktopPath
                     width: onDesk.implicitWidth + 28
                     height: 32
                     radius: 16
