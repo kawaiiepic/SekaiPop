@@ -168,9 +168,10 @@ Item {
         whSearchDelay.stop()
         if (face.onWallhaven && (WallhavenService.page === 0 || WallhavenService.query !== ""))
             WallhavenService.search("", face.screenPxW, face.screenPxH)
-        // Back on the folder with something new in it (a Wallhaven download): read it again,
-        // so the download is there at once rather than behind the Refresh dot.
-        if (!face.onWallhaven && !face.onEngine && face.hasNew)
+        // Engine replaces `items` with its package list. Always restore the
+        // folder snapshot when switching back, even when the folder itself
+        // has not changed (and therefore hasNew is false).
+        if (!face.onWallhaven && !face.onEngine)
             face.refresh()
         else
             face.recompute()
