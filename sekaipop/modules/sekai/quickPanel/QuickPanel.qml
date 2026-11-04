@@ -103,7 +103,7 @@ Scope {
     // went false. The cheatsheet board stays one layer down until this is false
     // (not just until `up` is), or it jumps back over the phone the moment the
     // phone starts to leave and the phone seems to dive behind it.
-    readonly property bool onScreen: win.visible
+    readonly property bool onScreen: win.visible || deckWindow.visible
 
     // ===== the phone's screens =====
     // AppSource.qml: the app index the Apps screen searches and launches from.
@@ -1769,7 +1769,7 @@ Scope {
         id: catcher
 
         screen: root.targetScreen
-        visible: root.useCatcher && win.visible
+        visible: root.useCatcher && (win.visible || deckWindow.visible)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Top
@@ -1858,11 +1858,61 @@ Scope {
     }
 
     // ===== the panel =====
+    // First cyberdeck screen: keep the mature phone routes for Apps/Settings/
+    // Wallpapers while sharing the same open/close IPC and source services.
+    readonly property bool deckActive: ShellStyle.cyberpunk && root.open
+        && !root.settingsShown && !root.launching && !panelFace.powerMenuOpen
+
+    MediaSource { id: deckMedia }
+    ResourceSource { id: deckResources; active: root.deckActive }
+    PanelWindow {
+        id: deckWindow
+        screen: root.targetScreen
+        visible: root.deckActive || deckLift > 0.001
+        property real deckLift: root.deckActive ? 1 : 0
+        Behavior on deckLift { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        color: "transparent"
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.namespace: "sekaipop-cyberdeck"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: root.deckActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        anchors.bottom: true
+        margins.bottom: 18
+        readonly property real fit: Math.max(0.1, Math.min(1, ((screen ? screen.width : 1200) - 36) / 1100,
+            ((screen ? screen.height : 800) - 90) / 670))
+        implicitWidth: Math.ceil(1100 * fit)
+        implicitHeight: Math.ceil(670 * fit)
+        mask: Region { item: deck }
+        CyberdeckFace {
+            id: deck
+            scale: deckWindow.fit
+            transformOrigin: Item.TopLeft
+            y: (1 - deckWindow.deckLift) * deckWindow.height
+            opacity: deckWindow.deckLift
+            source: root.source
+            media: deckMedia
+            resources: deckResources
+            notifications: root.notificationSource.entries
+            clockText: Qt.formatDateTime(clock.date, SettingsService.flag("time.use24h") ? "HH:mm" : "hh:mmAP")
+            dateText: Qt.formatDate(clock.date, "dddd / MMM dd")
+            focus: root.deckActive
+            Keys.onEscapePressed: root.close()
+            onCloseRequested: root.close()
+            onDismissRequested: key => root.notificationSource.dismiss(key)
+            onSearchRequested: query => root.goApps(query)
+            onRouteRequested: route => {
+                if (route === "lock") { root.close(); root.source.lock() }
+                else root.goOn(root.targetScreen, route)
+            }
+        }
+    }
+
     PanelWindow {
         id: win
 
         screen: root.targetScreen
-        visible: root.up || stage.lift < stage.hiddenLift || root.settingsShown
+        visible: (!ShellStyle.cyberpunk || root.settingsShown || root.launching || panelFace.powerMenuOpen
+            || root.alertUp || root.peekUp) && (root.up || stage.lift < stage.hiddenLift || root.settingsShown)
         color: "transparent"
 
         // Sits on the bottom edge, centered (no left / right anchor), and

@@ -26,7 +26,7 @@ QtObject {
     readonly property bool mono: styledPalette.mono === true
 
     readonly property color colBorder: styledPalette.border  // outline / shadow / dark text
-    readonly property color colBg: ShellStyle.cyberpunk ? "#0b1220" : "#ffffff"
+    readonly property color colBg: ShellStyle.cyberpunk ? "#0d1119" : "#ffffff"
     readonly property color accentCyan: styledPalette.A
     readonly property color accentMint: styledPalette.B
     readonly property color textWhite: "#ffffff"
@@ -82,7 +82,7 @@ QtObject {
     readonly property color surfaceHover: dark ? Qt.lighter(surface, 1.35) : "#f2f2f2"
     readonly property color surfaceDivider: dark ? Qt.lighter(surface, 1.75) : styledPalette.divider
     // The INNER rings. Dark: white. Darker: a dim grey. Light: as always.
-    readonly property color ringWhite: ShellStyle.cyberpunk ? "#23465b" : darker
+    readonly property color ringWhite: ShellStyle.cyberpunk ? "#303747" : darker
         ? Qt.lighter(surface, darkerRingLift)
         : (dark ? Qt.tint(Qt.color("#ffffff"), Qt.rgba(colBorder.r, colBorder.g, colBorder.b, darkRingTint)) : "#ffffff")   // the gap ring inside a Pill
     // The flat cards (the bar's popups, the launcher's search pill and results)
@@ -92,7 +92,7 @@ QtObject {
     // is drawn over the edge of the fill, so no card changes size. Light mode
     // has none (a white ring on a white card would not show).
     readonly property real cardRing: dark ? borderWidth : 0
-    readonly property color surfaceRing: ShellStyle.cyberpunk ? "#23465b" : darker
+    readonly property color surfaceRing: ShellStyle.cyberpunk ? "#303747" : darker
         ? Qt.lighter(surface, darkerRingLift * 0.8)
         : (dark ? Qt.tint(Qt.color("#ffffff"), Qt.rgba(colBorder.r, colBorder.g, colBorder.b, darkRingTint + 0.1)) : "#d9d9d9")   // the bar / dock inner ring
     readonly property color surfaceTint: dark

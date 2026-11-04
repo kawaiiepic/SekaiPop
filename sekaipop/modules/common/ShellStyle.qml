@@ -8,12 +8,12 @@ QtObject {
     readonly property string current: SettingsService.get("appearance.shellTheme") === "cyberpunk" ? "cyberpunk" : "default"
     readonly property bool cyberpunk: current === "cyberpunk"
     readonly property var palette: ({
-        border: "#26d9ed", A: "#00edff", B: "#ff3dbb", deep: "#090e1c",
-        rimHi: "#548bb3", bezel: "#172c43", wallLight: "#36546e",
-        wallMid: "#20384e", wallDark: "#101d30", hardware: "#070b14",
-        divider: "#e0f7ff", lens: "#ff3dbb", glint: "#f5ed58",
-        hoverTint: "#18344a", boardBg: "#0b1220", boardDot: "#23465b",
-        lockMint: "#00edff", lockPink: "#ff3dbb"
+        border: "#66768d", A: "#d397bd", B: "#91b4d4", deep: "#0b0e16",
+        rimHi: "#657389", bezel: "#202630", wallLight: "#66718b",
+        wallMid: "#30394b", wallDark: "#19202e", hardware: "#080b10",
+        divider: "#d4dae5", lens: "#91b4d4", glint: "#deb2d0",
+        hoverTint: "#292437", boardBg: "#0d1119", boardDot: "#303747",
+        lockMint: "#d397bd", lockPink: "#91b4d4"
     })
     function radius(value) { return cyberpunk ? Math.min(Number(value), 5) : value }
 }

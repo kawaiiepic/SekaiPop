@@ -80,10 +80,19 @@ Original shell and assets: [Blapples/SekaiPop](https://github.com/Blapples/Sekai
 ## Shell themes
 
 In **Settings → Quick → Look → Shell theme**, choose **Cyberpunk** for dark navy
-surfaces, cyan/magenta accents, yellow highlights, monospace text and sharper shared
+surfaces, muted pink/blue accents, monospace text and sharper shared
 controls. It applies live across the shell, including per-monitor themes, phone
 panels and the paper/film views. Choose **Default** to return to your existing
 palette and light/dark mode. The selection is saved across restarts.
+
+Cyberpunk's Quick Panel now opens as a landscape cyberdeck with a recessed
+three-column dashboard, live CPU/RAM readings, network/Bluetooth/quiet/night-light
+controls, volume and brightness sliders, MPRIS playback, notification dismissal,
+and clickable keyboard keys for app search. Escape, Close and click-away dismiss
+it; its footprint scales to fit the selected monitor. Apps, Wallpapers, Settings
+and the power menu still use their existing screens in this first implementation.
+The notification alert and hot-edge peek also retain their existing presentation.
+The deck does not change saved widget positions or your wallpaper.
 
 This skin changes SekaiPop itself; it does not change Umbriel, GTK/Qt applications,
 your wallpaper, or their saved theme settings. No extra fonts or shader compilation

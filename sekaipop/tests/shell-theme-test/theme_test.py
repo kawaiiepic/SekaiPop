@@ -68,8 +68,8 @@ QtObject {
     obj.select('cyberpunk')
     app.processEvents()
     cyber = snapshot()
-    assert cyber[:2] == ('#00edff', '#00edff'), cyber
-    assert cyber[2:] == ('#101d30', 'monospace', True, 5.0), cyber
+    assert cyber[:2] == ('#d397bd', '#d397bd'), cyber
+    assert cyber[2:] == ('#19202e', 'monospace', True, 5.0), cyber
     obj.select('default')
     app.processEvents()
     assert snapshot() == original, 'disabling restores all original bindings'
