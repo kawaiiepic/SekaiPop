@@ -1,1 +1,1 @@
-file:///tmp/sekaipop-we/WallpaperLayer.qml
+PLACEHOLDER_LAYER
