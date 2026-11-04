@@ -45,7 +45,7 @@ PanelWindow {
     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
     readonly property var mt: Theme.of(screen)
 
-readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled")
+    readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled")
     readonly property bool engineActive: WallpaperService.engineActive
     // Image layer is suppressed while linux-wallpaperengine draws the background.
     readonly property bool layerActive: win.wallpaperEnabled && !win.engineActive
@@ -65,7 +65,8 @@ readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled
     screen: modelData
 
     // ===== sole background-layer client =====
-    WlrLayershell.layer: WlrLayer.Background
+    WlrLayershell.layer: win.engineActive && WallpaperService.restackingDesktop
+        ? WlrLayer.Bottom : WlrLayer.Background
     WlrLayershell.namespace: "sekaipop-wallpaper"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
@@ -415,7 +416,7 @@ readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled
 
     // This monitor's wallpaper changed.
     function show(image) {
-    if (!win.wallpaperEnabled)
+        if (!win.layerActive)
             return;
         if (image === "" || image === win.shownImage)
             return;
@@ -450,7 +451,7 @@ readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled
     readonly property string screenName: win.modelData ? win.modelData.name : ""
 
       Component.onCompleted: {
-        if (win.wallpaperEnabled && win.wantedImage !== "") {
+        if (win.layerActive && win.wantedImage !== "") {
             win.shownImage = win.wantedImage;
             win.currentSlot = win.createSlot(win.wantedImage);
         }
@@ -527,7 +528,7 @@ readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled
     // EditStage.qml), and the ring in EditFrame hides its square corners.
     Item {
         id: stage
-        visible: win.wallpaperEnabled
+        visible: win.layerActive
         width: parent.width
         height: parent.height
         x: EditMode.xFor(win.screenName, win.width, win.height, win.uiScale)
@@ -597,7 +598,7 @@ readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled
                 id: videoLayer
                 anchors.fill: parent
                 z: 5
-                 active: win.wallpaperEnabled
+                 active: win.layerActive
                     && WallpaperService.videoFor(win.screenName)
                     && !win.transitioning
                     && win.currentSlot !== null

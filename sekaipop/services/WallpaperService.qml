@@ -494,6 +494,9 @@ Singleton {
     // has started, MpvpaperWallpaper.qml calls restackWidgets(): `restacking` is true for a
     // moment, every widget window moves to the Bottom layer and back, and moving
     // back puts it on top of the Background layer again, over the video.
+    // The transparent desktop input surface returns first, then the visualizer,
+    // then the widgets. This keeps desktop right-clicks below widget hit regions.
+    property bool restackingDesktop: false
     property bool restacking: false
     // The visualizer moves back down to Background a moment BEFORE the other widgets do, so it
     // is mapped first and ends up UNDER them (it only maps while music plays, so after a reload
@@ -501,10 +504,18 @@ Singleton {
     property bool restackingLow: false
 
     function restackWidgets() {
+        root.restackingDesktop = root.engineActive;
+        restackDesktopOff.restart();
         root.restacking = true;
         root.restackingLow = true;
         restackLowOff.restart();
         restackOff.restart();
+    }
+
+    Timer {
+        id: restackDesktopOff
+        interval: 30
+        onTriggered: root.restackingDesktop = false
     }
 
     Timer {
@@ -1198,7 +1209,7 @@ Singleton {
     // Every N minutes (Settings -> Desktop -> Wallpaper -> Random wallpaper).
     Timer {
         interval: Math.max(1, SettingsService.get("wallpaper.randomMinutes")) * 60 * 1000
-        running: SettingsService.get("wallpaper.randomMinutes") > 0 && !root.restoring
+        running: SettingsService.get("wallpaper.randomMinutes") > 0 && !root.restoring && !root.engineActive
         repeat: true
         onTriggered: root.random("")
     }

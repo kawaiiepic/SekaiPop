@@ -7,7 +7,7 @@ import qs.services
 
 // linux-wallpaperengine (Steam Workshop app 431960) as a wallpaper source.
 //
-// When active, the image WallpaperLayer is hidden and linux-wallpaperengine
+// When active, only WallpaperLayer's image content is hidden and linux-wallpaperengine
 // draws the background. Static / video picks via WallpaperService.stop the
 // engine process again.
 //
@@ -43,6 +43,20 @@ Singleton {
     readonly property bool available: root.workshopPath !== ""
 
     property bool active: false
+    property bool restorePending: true
+
+    // React to the renderer actually mapping, including slow starts and output
+    // changes. Ignore unrelated layer changes to avoid a restacking feedback loop.
+    readonly property string rendererLayers: {
+        const pid = Number(engineProc.processId || 0)
+        if (!root.active || pid <= 1) return ""
+        return Compositor.layerSnapshot.filter(l => Number(l.pid) === pid && l.mapped)
+            .map(l => l.output + ":" + l.namespace).sort().join("|")
+    }
+    onRendererLayersChanged: {
+        if (root.rendererLayers !== "") WallpaperService.restackWidgets()
+    }
+
     property string currentId: ""
     property string currentPath: ""
     property string currentName: ""
@@ -52,7 +66,14 @@ Singleton {
 
     Process {
         id: engineProc
+        onStarted: {
+            // Fallbacks for compositor versions without layer PID reporting.
+            lateRestack.restart()
+            laterRestack.restart()
+        }
     }
+    Timer { id: lateRestack; interval: 800; onTriggered: { if (root.active) WallpaperService.restackWidgets() } }
+    Timer { id: laterRestack; interval: 2500; onTriggered: { if (root.active) WallpaperService.restackWidgets() } }
 
     Process {
         id: helper
@@ -103,7 +124,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 const line = text.trim().split("\n")[0] || ""
-                if (line !== "")
+                if (line !== "" && root.pathOverride === "")
                     root.workshopPath = line
             }
         }
@@ -146,6 +167,9 @@ Singleton {
     }
 
     function stop() {
+        root.restorePending = false
+        lateRestack.stop()
+        laterRestack.stop()
         if (engineProc.running)
             engineProc.running = false
         root.active = false
@@ -159,6 +183,7 @@ Singleton {
         if (!idOrPath || String(idOrPath).length === 0)
             return
 
+        root.restorePending = false
         const raw = String(idOrPath)
         let bg = raw
         let path = ""
@@ -181,7 +206,7 @@ Singleton {
         if (engineProc.running)
             engineProc.running = false
 
-        engineProc.command = root.buildCommand(bg)
+        engineProc.command = root.buildCommand(path || bg)
         engineProc.running = true
 
         root.active = true
@@ -199,17 +224,32 @@ Singleton {
     }
 
     function restoreIfNeeded() {
+        // Settings and normal wallpaper picks are restored asynchronously. Do
+        // not consume the one-shot restore until both readers and Workshop
+        // detection have finished, and never overwrite an explicit new pick.
+        if (!root.restorePending || !SettingsService.loaded || !WallpaperService.ready
+                || root.workshopPath === "")
+            return
+        root.restorePending = false
         if (!SettingsService.flag("wallpaper.engine.active"))
             return
+        const path = String(SettingsService.get("wallpaper.engine.currentPath") || "")
         const id = String(SettingsService.get("wallpaper.engine.currentId") || "")
-        if (id === "")
-            return
-        root.setWallpaper(id)
+        if (path !== "" || id !== "") root.setWallpaper(path || id)
     }
 
+    Connections {
+        target: SettingsService
+        function onLoadedChanged() { root.restoreIfNeeded() }
+    }
+    Connections {
+        target: WallpaperService
+        function onReadyChanged() { root.restoreIfNeeded() }
+    }
+    onWorkshopPathChanged: root.restoreIfNeeded()
     Component.onCompleted: {
         root.detectWorkshopPath()
-        Qt.callLater(() => Qt.callLater(root.restoreIfNeeded))
+        root.restoreIfNeeded()
     }
 
     onPathOverrideChanged: root.detectWorkshopPath()
