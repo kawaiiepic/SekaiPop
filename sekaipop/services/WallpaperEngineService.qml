@@ -4,6 +4,7 @@ import Qt.labs.folderlistmodel
 import Quickshell
 import Quickshell.Io
 import qs.services
+import qs.modules.common
 
 // linux-wallpaperengine (Steam Workshop app 431960) as a wallpaper source.
 //
@@ -63,6 +64,8 @@ Singleton {
 
     // { id, path, name } for each workshop package folder
     property var entries: []
+    property var entryTitles: ({})
+    property bool metadataPending: false
 
     Process {
         id: engineProc
@@ -97,15 +100,48 @@ Singleton {
     }
 
     function rebuildEntries() {
+        root.publishEntries()
+        metadataDebounce.restart()
+    }
+
+    function publishEntries() {
         const out = []
         for (let i = 0; i < workshopList.count; i++) {
             const name = workshopList.get(i, "fileName") || ""
             const path = workshopList.get(i, "filePath") || ""
             if (!name || !path)
                 continue
-            out.push({ id: name, path: path, name: name })
+            out.push({ id: name, path: path, name: root.entryTitles[name] || name })
         }
         root.entries = out
+    }
+
+    function readMetadata() {
+        if (metadataReader.running) { root.metadataPending = true; return }
+        if (root.workshopPath === "") return
+        root.metadataPending = false
+        metadataReader.scanningPath = root.workshopPath
+        metadataReader.exec(["python3", Directories.script("umbriel/engine-metadata.py"), root.workshopPath])
+    }
+    Timer { id: metadataDebounce; interval: 50; onTriggered: root.readMetadata() }
+    Process {
+        id: metadataReader
+        property string scanningPath: ""
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (metadataReader.scanningPath !== root.workshopPath) return
+                try {
+                    root.entryTitles = JSON.parse(text)
+                    root.publishEntries()
+                    if (root.active && root.entryTitles[root.currentId])
+                        root.currentName = root.entryTitles[root.currentId]
+                } catch (e) { console.warn("Wallpaper Engine: could not read project titles") }
+            }
+        }
+        onExited: {
+            if (root.metadataPending || scanningPath !== root.workshopPath)
+                Qt.callLater(root.readMetadata)
+        }
     }
 
     function detectWorkshopPath() {
@@ -188,6 +224,8 @@ Singleton {
         let bg = raw
         let path = ""
         let name = displayName || ""
+        const known = (root.entries || []).find(entry => entry.id === raw || entry.path === raw)
+        if (!name && known) name = known.name
 
         if (raw.indexOf("/") >= 0) {
             path = raw
@@ -246,7 +284,11 @@ Singleton {
         target: WallpaperService
         function onReadyChanged() { root.restoreIfNeeded() }
     }
-    onWorkshopPathChanged: root.restoreIfNeeded()
+    onWorkshopPathChanged: {
+        root.entryTitles = ({})
+        metadataDebounce.restart()
+        root.restoreIfNeeded()
+    }
     Component.onCompleted: {
         root.detectWorkshopPath()
         root.restoreIfNeeded()

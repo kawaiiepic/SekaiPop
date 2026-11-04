@@ -100,7 +100,7 @@ Item {
 
     readonly property int centerIndex: root.count === 0 ? -1 : root.mod(Math.round(root.pos), root.count)
     readonly property string focusPath: root.centerIndex >= 0 ? (root.items[root.centerIndex].filePath || "") : ""
-    readonly property string focusName: root.centerIndex >= 0 ? root.baseName(root.items[root.centerIndex].fileName || "") : ""
+    readonly property string focusName: root.centerIndex >= 0 ? root.itemName(root.items[root.centerIndex]) : ""
 
     // The side being marked wears its own colours (the lockscreen's on its tab):
     // the check badge goes markA -> markB, the ring and the lit things are markB.
@@ -110,7 +110,7 @@ Item {
     property int shownIndex: -1
     readonly property bool shownOk: root.shownIndex >= 0 && root.shownIndex < root.count
     readonly property string shownPath: root.shownOk ? (root.items[root.shownIndex].filePath || "") : ""
-    readonly property string shownName: root.shownOk ? root.baseName(root.items[root.shownIndex].fileName || "") : ""
+    readonly property string shownName: root.shownOk ? root.itemName(root.items[root.shownIndex]) : ""
 
     function syncShown() {
         root.shownIndex = root.centerIndex
@@ -143,6 +143,10 @@ Item {
 
     function mod(a, n) {
         return ((a % n) + n) % n
+    }
+
+    function itemName(entry) {
+        return entry.engine ? (entry.fileName || "") : root.baseName(entry.fileName || "")
     }
 
     function baseName(fileName) {

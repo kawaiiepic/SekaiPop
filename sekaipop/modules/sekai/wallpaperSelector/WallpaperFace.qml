@@ -397,11 +397,17 @@ Item {
             return
         }
         if (face.onEngine) {
+            const viewed = face.viewIndex >= 0 && face.viewIndex < face.matched.length
+                ? face.matched[face.viewIndex].filePath : ""
             const list = face.engineItems()
             const q = face.searchText.trim().toLowerCase()
             face.items = list
             face.matched = q === "" ? list
                 : list.filter(it => it.fileName.toLowerCase().indexOf(q) !== -1)
+            if (viewed !== "") {
+                face.viewIndex = face.matched.findIndex(it => it.filePath === viewed)
+                if (face.viewIndex >= 0) face.viewName = face.matched[face.viewIndex].fileName
+            }
             return
         }
         const q = face.searchText.trim().toLowerCase()
@@ -1185,7 +1191,8 @@ Item {
                         anchors.centerIn: parent
                         width: parent.width - 18
                         horizontalAlignment: Text.AlignHCenter
-                        text: cell.wh ? cell.wh.resolution.replace("x", "\u00d7") : face.baseName(cell.modelData.fileName)
+                        text: cell.wh ? cell.wh.resolution.replace("x", "\u00d7")
+                            : (cell.modelData.engine ? cell.modelData.fileName : face.baseName(cell.modelData.fileName))
                         elide: Text.ElideMiddle
                         color: mt.pInk
                         font.family: mt.fontFamily
