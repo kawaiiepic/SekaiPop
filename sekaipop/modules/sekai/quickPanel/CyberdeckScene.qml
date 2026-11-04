@@ -11,7 +11,8 @@ Item {
     property string clockText: "00:00"
     property string dateText: ""
     readonly property Item faceItem: face
-    property real pitch: 18
+    // Negative X pitch brings the lower keyboard edge toward the camera.
+    property real pitch: -18
     property real yaw: -16
     readonly property bool modelReady: chassis.status === RuntimeLoader.Success
     readonly property string modelError: chassis.errorString

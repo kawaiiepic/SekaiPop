@@ -95,7 +95,7 @@ The notification alert and hot-edge peek also retain their existing presentation
 The deck does not change saved widget positions or your wallpaper.
 
 The deck now uses a real, original OBJ/MTL chassis in a Qt Quick 3D perspective
-scene (18° pitch, −16° yaw), including raised keycaps, screen rails, rear shell,
+scene (−18° pitch, −16° yaw; keyboard edge nearest the viewer), including raised keycaps, screen rails, rear shell,
 vent slots, ports and screws. The interactive face follows the camera transform;
 Qt maps clicks, dragging and typing to the controls. **Qt Quick 3D and
 QtQuick3D.AssetUtils**, matching your Qt version, are needed for the model. Run
