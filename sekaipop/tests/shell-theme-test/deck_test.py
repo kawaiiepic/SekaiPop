@@ -8,6 +8,16 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQuick import QQuickView
 from PySide6.QtTest import QTest
 
+# Check the integration against the real source API too: the pure UI mock
+# cannot catch unknown properties assigned to a Quickshell service.
+import re
+base = Path(__file__).resolve().parents[2]
+panel = (base / 'modules/sekai/quickPanel/QuickPanel.qml').read_text()
+resource = (base / 'services/ResourceSource.qml').read_text()
+binding = re.search(r'ResourceSource\s*\{[^}]*id:\s*deckResources;([^}]+)', panel)[1]
+for name in re.findall(r'(\w+)\s*:', binding):
+    assert re.search(r'property\s+\w+\s+' + name + r'\b', resource), name + ' is not a ResourceSource property'
+
 app = QGuiApplication([])
 view = QQuickView()
 folder = Path(__file__).resolve().parents[2] / 'modules/sekai/quickPanel'

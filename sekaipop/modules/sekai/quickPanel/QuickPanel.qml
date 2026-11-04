@@ -1864,7 +1864,7 @@ Scope {
         && !root.settingsShown && !root.launching && !panelFace.powerMenuOpen
 
     MediaSource { id: deckMedia }
-    ResourceSource { id: deckResources; active: root.deckActive }
+    ResourceSource { id: deckResources; wanted: root.deckActive }
     PanelWindow {
         id: deckWindow
         screen: root.targetScreen
