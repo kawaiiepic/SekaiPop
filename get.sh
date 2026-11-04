@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # get.sh: the one-command installer for SekaiPop.
 #
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Blapples/SekaiPop/main/get.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/kawaiiepic/SekaiPop/main/get.sh)
 #
 # It downloads SekaiPop into a temporary folder, runs install.sh from there (so nobody
 # has to clone, chmod or cd), and cleans up afterwards. Everything after the script is
 # passed on to install.sh, for example:
 #
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Blapples/SekaiPop/main/get.sh) --dry-run
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Blapples/SekaiPop/main/get.sh) --yes --hypr merge
+#   bash <(curl -fsSL https://raw.githubusercontent.com/kawaiiepic/SekaiPop/main/get.sh) --dry-run
+#   bash <(curl -fsSL https://raw.githubusercontent.com/kawaiiepic/SekaiPop/main/get.sh) --yes --hypr merge
 #
 # The "curl ... | bash -s -- --dry-run" form works too.
 #
@@ -22,7 +22,7 @@
 
 set -euo pipefail
 
-REPO=${SEKAIPOP_REPO:-https://github.com/Blapples/SekaiPop.git}
+REPO=${SEKAIPOP_REPO:-https://github.com/kawaiiepic/SekaiPop.git}
 REF=${SEKAIPOP_REF:-main}
 KEEP=${SEKAIPOP_DIR:-}
 
@@ -81,7 +81,7 @@ fi
 
 say "Running the installer"
 set +e
-bash "$DIR/install.sh" "$@" <"$INPUT"
+SEKAIPOP_REF="$REF" bash "$DIR/install.sh" "$@" <"$INPUT"
 rc=$?
 set -e
 [ "$rc" = 0 ] || printf '\n%sThe installer stopped (exit %s). Nothing is hidden: scroll up for the reason, then run the same command again.%s\n' "$R" "$rc" "$Z" >&2

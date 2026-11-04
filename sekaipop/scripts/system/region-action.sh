@@ -156,40 +156,8 @@ case "$mode" in
         esac
         ;;
     rules)
-        # The picker's overlay is mapped when it opens and unmapped when it
-        # closes, and Hyprland plays its own layer animation on both: the dim
-        # zooms in and out. Switch that off for the picker's two namespaces
-        # (the dim and the card are untouched). Same thing as, in hyprland.lua:
-        #   hl.layer_rule({ match = { namespace = "^sekaipop-region$" }, no_anim = true })
-        #
-        # A rule added with `hyprctl eval` lives only until Hyprland reloads its
-        # config (hyprctl reload, an edit of hyprland.lua, the anti-flashbang
-        # tile, Settings -> Hyprland ...), and then the zoom comes back. So:
-        #   - it is applied live (RegionService does this at start-up and again
-        #     after every "configreloaded" event), and
-        #   - when hyprland.lua already loads sekaipop_overrides, it is also
-        #     written there (marker lines, like the other sekaipop options), so a
-        #     reload brings it back by itself.
-        have hyprctl || exit 0
-        cfgdir="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
-        ovr="$cfgdir/sekaipop_overrides.lua"
-        linked=no
-        [ -f "$cfgdir/hyprland.lua" ] && grep -q 'sekaipop_overrides' "$cfgdir/hyprland.lua" && linked=yes
-        for spec in "region-no-anim:sekaipop-region" "region-preview-no-anim:sekaipop-region-preview"; do
-            key="${spec%%:*}"
-            ns="${spec#*:}"
-            lua="hl.layer_rule({ name = \"sekaipop-$key\", match = { namespace = \"^$ns\$\" }, no_anim = true })"
-            if [ "$linked" = yes ]; then
-                mark="-- sekaipop:$key"
-                [ -e "$ovr" ] || : > "$ovr"
-                grep -q -F -e "$mark" "$ovr" || printf '%s %s\n' "$lua" "$mark" >> "$ovr"
-            fi
-            out=$(hyprctl eval "$lua" 2>&1)
-            case "$out" in
-                ok*|"") ;;
-                *) hyprctl keyword layerrule "no_anim on, match:namespace ^$ns\$" >/dev/null 2>&1 ;;
-            esac
-        done
+        # Umbriel owns layer effects through its configuration.
+        exit 0
         ;;
     tools)
         for t in grim wl-copy swappy magick convert tesseract curl jq wf-recorder pactl xdg-open notify-send; do

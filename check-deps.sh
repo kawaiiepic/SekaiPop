@@ -144,22 +144,18 @@ cmd 1 bash bash pac
 # --------------------------------------------------------------------------
 section "Compositor"
 # --------------------------------------------------------------------------
-cmd 1 Hyprland hyprland pac
-cmd 1 hyprctl hyprland pac
-if have hyprctl && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
-    v=$(hyprctl version 2>/dev/null | grep -oiE 'v?[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1)
-    printf '  %sHyprland running, version: %s%s\n' "$D" "${v:-unknown}" "$Z"
-fi
-if [ -f "$HOME/.config/hypr/hyprland.lua" ]; then
-    printf '  %sconfig mode: Lua (hyprland.lua)%s\n' "$D" "$Z"
-    if grep -q 'sekaipop_overrides' "$HOME/.config/hypr/hyprland.lua" 2>/dev/null \
+cmd 1 umbriel umbriel manual "build/package from noctalia-dev/umbriel"
+cmd 1 python3 python pac "Python 3.11+ (tomllib)"
+if [ -f "$HOME/.config/hypr/config.toml" ]; then
+    printf '  %sconfig mode: Lua (config.toml)%s\n' "$D" "$Z"
+    if grep -q 'sekaipop_overrides' "$HOME/.config/hypr/config.toml" 2>/dev/null \
        || grep -rqs 'sekaipop_overrides' "$HOME/.config/hypr" 2>/dev/null; then
-        record 3 'hyprland.lua loads sekaipop_overrides' 1 "" manual
+        record 3 'config.toml loads sekaipop_overrides' 1 "" manual
     else
-        record 3 'hyprland.lua loads sekaipop_overrides' 0 "" manual 'add: pcall(require, "sekaipop_overrides") or Settings changes are lost on reload'
+        record 3 'config.toml loads sekaipop_overrides' 0 "" manual 'add: pcall(require, "sekaipop_overrides") or Settings changes are lost on reload'
     fi
-elif [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
-    printf '  %sconfig mode: hyprlang (hyprland.conf); the rice supports both%s\n' "$D" "$Z"
+elif [ -f "$HOME/.config/hypr/config.toml" ]; then
+    printf '  %sconfig mode: hyprlang (config.toml); the rice supports both%s\n' "$D" "$Z"
 fi
 
 # --------------------------------------------------------------------------
@@ -168,7 +164,7 @@ section "Quickshell and Qt 6"
 cmd 1 qs quickshell pac "also: quickshell"
 cmd 1 quickshell quickshell pac
 if have qs || have quickshell; then
-    for m in Quickshell/Hyprland Quickshell/Wayland Quickshell/Io Quickshell/Widgets \
+    for m in Quickshell/Wayland Quickshell/Io Quickshell/Widgets \
              Quickshell/Services/Pam Quickshell/Services/Polkit Quickshell/Services/Notifications \
              Quickshell/Services/UPower Quickshell/Services/Pipewire Quickshell/Services/Mpris \
              Quickshell/Services/SystemTray; do
@@ -179,6 +175,8 @@ else
 fi
 qml 1 QtMultimedia qt6-multimedia pac "video wallpaper"
 qml 1 QtQuick/Effects qt6-declarative pac "MultiEffect, Qt 6.5+"
+qml 2 QtQuick3D qt6-quick3d pac "Cyberpunk 3D cyberdeck"
+qml 2 QtQuick3D/AssetUtils qt6-quick3d pac "cyberdeck OBJ model loading"
 qml 1 QtQuick/Shapes qt6-declarative pac
 qml 1 Qt/labs/folderlistmodel qt6-declarative pac
 QT_CHECKED=0
@@ -240,7 +238,7 @@ cmd 2 systemd-inhibit systemd pac "Keep Awake"
 cmd 2 powerprofilesctl power-profiles-daemon pac "power profile button"
 cmd 2 brightnessctl brightnessctl pac "laptop brightness"
 cmd 2 ddcutil ddcutil pac "external monitor brightness"
-cmd 2 hyprsunset hyprsunset pac "Night Light and gamma"
+cmd 2 wlsunset wlsunset pac "Night Light"
 
 # Services (warn only: other init systems exist)
 if have systemctl; then
@@ -303,7 +301,7 @@ cmd 3 xrdb xorg-xrdb pac "XWayland cursor"
 if [ -n "${QT_QPA_PLATFORMTHEME:-}" ]; then
     printf '  %sQT_QPA_PLATFORMTHEME=%s%s\n' "$D" "$QT_QPA_PLATFORMTHEME" "$Z"
 else
-    printf '  %s[note]%s QT_QPA_PLATFORMTHEME is not set in this shell; set it in Hyprland (env) for Qt apps to follow the colours\n' "$Y" "$Z"
+    printf '  %s[note]%s QT_QPA_PLATFORMTHEME is not set in this shell; set it in Umbriel (env) for Qt apps to follow the colours\n' "$Y" "$Z"
 fi
 
 # --------------------------------------------------------------------------
@@ -328,8 +326,7 @@ section "Updates badge, displays, extras"
 # --------------------------------------------------------------------------
 cmd 3 checkupdates pacman-contrib pac "official update count (Arch only)"
 any 3 "AUR helper for the update count (install yay or paru from the AUR)" "" manual yay paru
-cmd 3 nwg-displays nwg-displays pac "extra in Settings > Hyprland > Displays"
-cmd 3 hyprpm hyprland pac "only for the scroll-overview plugin"
+cmd 3 wdisplays wdisplays pac "extra in Settings > Umbriel > Displays"
 cmd 3 warp-cli cloudflare-warp-bin aur "WARP toggle"
 cmd 3 git git pac
 cmd 3 node nodejs pac "Discord voice companion"
@@ -337,7 +334,7 @@ cmd 3 pnpm pnpm pac "Discord voice companion"
 any 3 "Discord client (Vesktop / Equibop / Discord)" vesktop aur vesktop equibop discord
 
 # --------------------------------------------------------------------------
-section "Bare-system layer (what a minimal Hyprland / no-desktop install often lacks)"
+section "Bare-system layer (what a minimal Umbriel / no-desktop install often lacks)"
 # --------------------------------------------------------------------------
 # libexec_has <name>: executable in /usr/lib or /usr/libexec (portals live there, not in PATH)
 libexec_has() { local d; for d in /usr/lib /usr/libexec /usr/lib64; do [ -x "$d/$1" ] && return 0; done; return 1; }
@@ -345,7 +342,7 @@ libexec_has() { local d; for d in /usr/lib /usr/libexec /usr/lib64; do [ -x "$d/
 if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] || [ -S "${XDG_RUNTIME_DIR:-/nonexistent}/bus" ]; then
     record 1 "D-Bus session bus" 1 dbus pac
 else
-    record 1 "D-Bus session bus" 0 dbus pac "start Hyprland from a real login (TTY or display manager), not su/ssh"
+    record 1 "D-Bus session bus" 0 dbus pac "start Umbriel from a real login (TTY or display manager), not su/ssh"
 fi
 if have loginctl && [ -n "${XDG_SESSION_ID:-}" ] && loginctl show-session "$XDG_SESSION_ID" >/dev/null 2>&1; then
     record 2 "systemd-logind session (power menu, suspend, lock)" 1 systemd pac
@@ -369,11 +366,11 @@ else
     record 1 "OpenGL/EGL stack (Qt Quick renders with it)" 0 mesa pac "also a GPU driver: vulkan-radeon / vulkan-intel / nvidia-utils"
 fi
 have Xwayland && record 2 "Xwayland (X11 apps, cursor sync for them)" 1 xorg-xwayland pac \
-    || record 2 "Xwayland (X11 apps, cursor sync for them)" 0 xorg-xwayland pac "normally pulled in by hyprland"
+    || record 2 "Xwayland (X11 apps, cursor sync for them)" 0 xorg-xwayland pac "enable Xwayland in Umbriel"
 libexec_has xdg-desktop-portal && record 2 "xdg-desktop-portal" 1 xdg-desktop-portal pac \
     || record 2 "xdg-desktop-portal" 0 xdg-desktop-portal pac "screen sharing and file dialogs in apps (the rice itself doesn't call it)"
-libexec_has xdg-desktop-portal-hyprland && record 2 "xdg-desktop-portal-hyprland" 1 xdg-desktop-portal-hyprland pac \
-    || record 2 "xdg-desktop-portal-hyprland" 0 xdg-desktop-portal-hyprland pac "screen sharing"
+libexec_has xdg-desktop-portal-umbriel && record 2 "xdg-desktop-portal-umbriel" 1 xdg-desktop-portal-umbriel manual \
+    || record 2 "xdg-desktop-portal-umbriel" 0 xdg-desktop-portal-umbriel manual "screen sharing"
 libexec_has xdg-desktop-portal-gtk && record 3 "xdg-desktop-portal-gtk" 1 xdg-desktop-portal-gtk pac \
     || record 3 "xdg-desktop-portal-gtk" 0 xdg-desktop-portal-gtk pac "file dialogs in GTK/Electron apps"
 any 2 "file manager (the dock's Files stack opens folders with xdg-open)" thunar pac thunar nautilus dolphin nemo pcmanfm pcmanfm-qt caja
@@ -400,18 +397,11 @@ if [ -n "${WAYLAND_DISPLAY:-}" ] && have systemctl && systemctl --user show-envi
         record 2 "session environment reaches user services (portals, screen sharing)" 1 "" manual
     else
         record 2 "session environment reaches user services (portals, screen sharing)" 0 "" manual \
-            "autostart in Hyprland: dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP (install-deps.sh writes it)"
+            "autostart in Umbriel: dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP (install-deps.sh writes it)"
     fi
 fi
 any 3 "secret service for apps (Discord, browsers, VS Code, saved passwords)" gnome-keyring pac gnome-keyring-daemon keepassxc
-if [ -d "$HOME/.config/hypr" ]; then
-    if grep -rqsE '(qs|quickshell)[[:space:]]+-c[[:space:]]+sekaipop' "$HOME/.config/hypr" 2>/dev/null; then
-        record 2 "Hyprland autostarts the shell (qs -c sekaipop)" 1 "" manual
-    else
-        record 2 "Hyprland autostarts the shell (qs -c sekaipop)" 0 "" manual \
-            'add to hyprland.lua: hl.on("hyprland.start", function() hl.exec_cmd("qs -c sekaipop") end)   (hyprlang: exec-once = qs -c sekaipop)'
-    fi
-fi
+
 
 # --------------------------------------------------------------------------
 section "Hardware access (info)"
@@ -437,7 +427,7 @@ for p in mako dunst swaync fnott hyprpolkitagent polkit-gnome-authentication-age
     fi
 done
 [ "$conflict" = 0 ] && printf '  %s[ ok ]%s no conflicting notification daemon or polkit agent running\n' "$G" "$Z"
-printf '  %s[note]%s if you log in from a display manager, pick plain Hyprland, not the uwsm one (end-4 says the same)%s\n' "$Y" "$Z" ""
+printf '  %s[note]%s if you log in from a display manager, pick plain Umbriel, not the uwsm one (end-4 says the same)%s\n' "$Y" "$Z" ""
 
 # --------------------------------------------------------------------------
 section "Rice folder (only if already copied)"

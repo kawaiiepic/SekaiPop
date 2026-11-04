@@ -34,7 +34,7 @@ Item {
     property real capW: 200
     property real capH: 60
     property real skew: 0.2 * mt.settingsLean
-    property real radius: 18
+    property real radius: ShellStyle.radius(18)
 
     property bool lit: false
     property bool hovered: false
@@ -97,7 +97,7 @@ Item {
         width: root.capW
         height: root.capH
         skew: root.skew
-        radius: root.radius
+        radius: ShellStyle.radius(root.radius)
         color: mt.pLineShadow
     }
 
@@ -129,7 +129,7 @@ Item {
         Slant {
             anchors.fill: parent
             skew: root.skew
-            radius: root.radius
+            radius: ShellStyle.radius(root.radius)
             color: mt.pRingWhite
             borderColor: mt.pLine
             borderWidth: root.border
@@ -142,7 +142,7 @@ Item {
             width: root.capW - 2 * x
             height: root.capH - 2 * root.inset
             skew: root.skew
-            radius: Math.max(0, root.radius - root.inset)
+            radius: Math.max(0, ShellStyle.radius(root.radius) - root.inset)
             color: root.hovered && root.litP < 0.5 ? root.hoverColor : root.idleColor
         }
 
@@ -154,7 +154,7 @@ Item {
             width: Math.max(0, (root.capW - 2 * x) * root.litP)
             height: root.capH - 2 * root.inset
             skew: root.skew
-            radius: Math.max(0, root.radius - root.inset)
+            radius: Math.max(0, ShellStyle.radius(root.radius) - root.inset)
             gradient: root.litGradient
         }
 

@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 
 // The shell's own on-screen keyboard (modules/sekai/keyboard/), as one shared
 // state. The bar's keyboard button (UtilButtons.qml / UtilKeys.qml) and the
@@ -88,7 +88,7 @@ Singleton {
         command: ["sh", "-c", "command -v \"$1\" >/dev/null 2>&1 || exit 127", "sh", root.program]
         onExited: (exitCode, exitStatus) => {
             if (exitCode === 0) {
-                root.targetMonitorName = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+                root.targetMonitorName = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
                 root.open = true
             } else {
                 Quickshell.execDetached(["notify-send", "-a", "Shell", "-i", "material:error",

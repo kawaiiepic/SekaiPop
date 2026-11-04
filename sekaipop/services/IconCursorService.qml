@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import qs.modules.common
 
 // The icon theme and the cursor theme, changed while everything is running.
@@ -500,7 +500,7 @@ Singleton {
     }
 
     Connections {
-        target: Hyprland
+        target: Compositor
         function onRawEvent(event) {
             if (event.name === "configreloaded")
                 reapplySoon.restart()

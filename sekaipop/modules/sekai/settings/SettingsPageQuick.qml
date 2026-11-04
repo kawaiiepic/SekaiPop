@@ -18,6 +18,17 @@ SettingsPage {
         title: "Look"
 
         SettingChoice {
+            label: "Shell theme"
+            sublabel: "Cyberpunk styles the whole shell. Default restores your colours and mode"
+            current: SettingsService.get("appearance.shellTheme")
+            options: [
+                { id: "default", label: "Default", icon: "palette" },
+                { id: "cyberpunk", label: "Cyberpunk", icon: "bolt" }
+            ]
+            onPicked: id => SettingsService.set("appearance.shellTheme", id)
+        }
+
+        SettingChoice {
             label: "Mode"
             sublabel: "Light, dark, or near-black"
             current: ThemeService.mode

@@ -61,17 +61,7 @@ can_hibernate() {
 }
 
 # Hyprland's Lua config takes its dispatchers as Lua; hyprland.conf takes the old words.
-dpms() {
-    if [ -f "$hypr/hyprland.lua" ]; then
-        if [ "$1" = off ]; then
-            echo "hyprctl dispatch 'hl.dsp.dpms({ action = \"disable\" })'"
-        else
-            echo "hyprctl dispatch 'hl.dsp.dpms({ action = \"enable\" })'"
-        fi
-    else
-        echo "hyprctl dispatch dpms $1"
-    fi
-}
+dpms() { echo "umbriel msg dpms-$1"; }
 
 render() {
     lock="$1" off="$2" sleep="$3" action="$4"

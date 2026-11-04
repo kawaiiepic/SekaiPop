@@ -1041,9 +1041,7 @@ SettingsPage {
                     label: appRow.modelData.label
                     detail: AppThemeService.stateOf(appRow.modelData.id) === "not installed"
                             ? "Not installed"
-                            : (appRow.modelData.id === "hyprland" && HyprlandSettings.isLua && !HyprlandSettings.linked
-                               ? "Live now; see the Hyprland page's one-time setup to keep it"
-                               : appRow.modelData.note)
+                            : appRow.modelData.note
                     checked: SettingsService.flag("appTheme." + appRow.modelData.id)
                     onToggled: AppThemeService.setEnabled(appRow.modelData.id,
                         !SettingsService.flag("appTheme." + appRow.modelData.id))

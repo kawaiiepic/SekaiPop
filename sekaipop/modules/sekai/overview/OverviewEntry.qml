@@ -22,7 +22,7 @@ ActivationEntry {
     // plugin has already been asked (or is not there), so open the board itself.
     openFunction: "openBoard"
 
-    readonly property bool scrollStyle: SettingsService.get("overview.style") === "scroll"
+    readonly property bool scrollStyle: true
 
     // Same rule as the board's old `openOn`.
     function openOn(screen) {

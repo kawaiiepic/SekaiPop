@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Services.Pipewire
 
 // ===== volume / mic =====
@@ -122,7 +122,7 @@ Singleton {
     property bool ddcDetecting: false
 
     function focusedMonitorName() {
-        return Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        return Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
     }
 
     function ensureBackendDetected(then) {
@@ -288,7 +288,7 @@ Singleton {
     Process {
         id: gammaRead
         property var pendingCallback: null
-        command: ["sh", "-c", "timeout 2 hyprctl hyprsunset gamma 2>/dev/null | head -n1"]
+        command: ["printf", "100"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const g = parseFloat(text.trim())
@@ -331,9 +331,7 @@ Singleton {
 
     Process {
         id: gammaSet
-        command: ["sh", "-c",
-            "pidof hyprsunset >/dev/null || { setsid hyprsunset >/dev/null 2>&1 & sleep 0.6; }; hyprctl hyprsunset gamma "
-            + Math.round(root.gamma)]
+        command: ["notify-send", "SekaiPop", "Software gamma keys are unavailable on Umbriel. Use hardware brightness controls."]
     }
 
     function gammaUp() {

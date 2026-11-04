@@ -53,9 +53,8 @@ Singleton {
         { id: "prompt", label: "Terminal prompt", icon: "terminal", scripts: ["prompt"],
           note: "Outlined sticker plates with a hard shadow · fish, new shells · needs a Nerd Font" },
         { id: "launcher", label: "Launcher", icon: "apps", scripts: ["fuzzel", "rofi"],
-          note: "fuzzel and rofi" },
-        { id: "hyprland", label: "Window borders", icon: "border_style", scripts: ["hyprland"],
-          note: "Hyprland's active and inactive borders · live" }
+          note: "fuzzel and rofi" }
+
     ]
 
     function target(id) {

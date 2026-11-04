@@ -527,62 +527,14 @@ prompt_status() {
     else echo missing; fi
 }
 
-# ===== hyprland (window borders) =====
-# The active and inactive window borders take the theme's colours, written to
-# ~/.config/hypr/sekaipop_overrides.lua (the file the Hyprland page of the Settings
-# Panel also writes, and which hyprland.lua loads with
-# `pcall(require, "sekaipop_overrides")`) as ONE line tagged "-- sekaipop:apptheme:hyprland",
-# and applied live with `hyprctl eval`. Revert deletes that line and reloads Hyprland, which
-# gives back the colours of your own hyprland.lua. The thickness is not touched
-# (Settings -> Hyprland -> Gaps & borders -> Border thickness; 0 means no border at all).
-hypr_file="$cfg/hypr/sekaipop_overrides.lua"
-HMARK="-- sekaipop:apptheme:hyprland"
-hyprland_drop() {
-    [ -f "$hypr_file" ] || return 0
-    tmp=$(mktemp "$cfg/hypr/.sekaipop_overrides.XXXXXX") || return 1
-    grep -v -F -e "$HMARK" "$hypr_file" > "$tmp"
-    [ $? -le 1 ] || { rm -f "$tmp"; return 1; }
-    chmod 644 "$tmp"
-    mv -f "$tmp" "$hypr_file" || { rm -f "$tmp"; return 1; }
-}
-hyprland_apply() {
-    have hyprctl || [ -d "$cfg/hypr" ] || { echo "Hyprland is not installed"; return 3; }
-    # The borders' own colours; the accent and the muted tone if a caller sent none.
-    act="${col_hlactive:-$col_accent}"; ina="${col_hlinactive:-$col_muted}"
-    [ -n "$act" ] && [ -n "$ina" ] || { echo "missing colours" >&2; return 2; }
-    mkdir -p "$cfg/hypr" || return 1
-    [ -e "$hypr_file" ] || : > "$hypr_file"
-    hyprland_drop || return 1
-    tbl="{ [\"general\"] = { [\"col\"] = { [\"active_border\"] = \"rgba($(nh "$act")ee)\", [\"inactive_border\"] = \"rgba($(nh "$ina")cc)\" } } }"
-    # pcall: a bad value must not stop the lines below it in the override file.
-    printf 'pcall(hl.config, %s) %s\n' "$tbl" "$HMARK" >> "$hypr_file" || return 1
-    have hyprctl || return 0
-    out=$(hyprctl eval "hl.config($tbl)" 2>&1)
-    case "$out" in
-        ok*|"") ;;
-        *) echo "hyprland: Hyprland did not take the colours live ($out); they are in $hypr_file for the next reload" >&2 ;;
-    esac
-    return 0
-}
-hyprland_revert() {
-    hyprland_drop
-    have hyprctl && hyprctl reload >/dev/null 2>&1
-    return 0
-}
-hyprland_status() {
-    if grep -qF -e "$HMARK" "$hypr_file" 2>/dev/null; then echo on
-    elif have hyprctl || [ -d "$cfg/hypr" ]; then echo off
-    else echo missing; fi
-}
 
-# ===== dispatch =====
 case "$cmd" in
     apply)
         [ -n "$col_bg" ] && [ -n "$col_fg" ] && [ -n "$col_accent" ] || { echo "missing colours" >&2; exit 2; }
         case "$target" in
             kitty) kitty_apply ;; foot) foot_apply ;; vscode) vscode_apply ;;
             fuzzel) fuzzel_apply ;; rofi) rofi_apply ;; fish) fish_apply ;;
-            prompt) prompt_apply ;; hyprland) hyprland_apply ;;
+            prompt) prompt_apply ;;
             *) echo "unknown target: $target" >&2; exit 2 ;;
         esac
         exit $?
@@ -591,13 +543,13 @@ case "$cmd" in
         case "$target" in
             kitty) kitty_revert ;; foot) foot_revert ;; vscode) vscode_revert ;;
             fuzzel) fuzzel_revert ;; rofi) rofi_revert ;; fish) fish_revert ;;
-            prompt) prompt_revert ;; hyprland) hyprland_revert ;;
+            prompt) prompt_revert ;;
             *) echo "unknown target: $target" >&2; exit 2 ;;
         esac
         exit $?
         ;;
     status)
-        for t in kitty foot vscode fuzzel rofi fish prompt hyprland; do printf '%s=%s\n' "$t" "$(${t}_status)"; done
+        for t in kitty foot vscode fuzzel rofi fish prompt; do printf '%s=%s\n' "$t" "$(${t}_status)"; done
         ;;
     *)
         echo "usage: $0 apply <target> k=v ...|revert <target>|status" >&2

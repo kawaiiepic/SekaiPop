@@ -1,9 +1,8 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import "../../common/functions/PhoneMath.js" as PM
 import "../../common/functions/FlipMath.js" as FM
 import "PhoneRoute.js" as PR
@@ -104,7 +103,7 @@ Scope {
     // went false. The cheatsheet board stays one layer down until this is false
     // (not just until `up` is), or it jumps back over the phone the moment the
     // phone starts to leave and the phone seems to dive behind it.
-    readonly property bool onScreen: win.visible
+    readonly property bool onScreen: win.visible || deckWindow.visible
 
     // ===== the phone's screens =====
     // AppSource.qml: the app index the Apps screen searches and launches from.
@@ -378,7 +377,7 @@ Scope {
     property double hotBlockedUntil: 0
 
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s
@@ -521,7 +520,7 @@ Scope {
             setRoute(PR.go(phoneRoute, kind))
             settingsOpen = true
             // What Hyprland says now, in case a reload or a hand edit changed it.
-            HyprlandSettings.refresh()
+            CompositorSettings.refresh()
             settingsExit.stop()
             stage.sPop = 1
             stage.sAlpha = 1
@@ -535,7 +534,7 @@ Scope {
                 targetScreen = screen
             setRoute(PR.open(kind))
             settingsOpen = true
-            HyprlandSettings.refresh()
+            CompositorSettings.refresh()
             settingsExit.stop()
             flipPrep.stop()
             flipAnim.stop()
@@ -1106,8 +1105,8 @@ Scope {
     // Quickshell.reload(true) is a hard reload (every window is rebuilt,
     // not reused), so it also clears out a window that got stuck.
     Process {
-        id: refreshHyprland
-        command: ["hyprctl", "reload"]
+        id: refreshCompositor
+        command: ["umbriel", "msg", "config-reload"]
         onExited: Quickshell.reload(true)
     }
 
@@ -1218,12 +1217,7 @@ Scope {
     // appid+name twice crashes the second one, so only one shell may run at a time.
     // onReleased alone decides nothing: the bind is a release bind (`release = true`),
     // and Hyprland is what drops it when Super was held for another key (issue #99).
-    GlobalShortcut {
-        appid: "quickshell"
-        name: "searchToggleRelease"
-        description: "Shell: Toggle search"
-        onReleased: root.toggleAppsOn(root.focusedScreen())
-    }
+
 
     // The old wallpaper picker board's name (it is gone: the Wallpapers are this
     // phone's landscape screen now). A keybind or the desktop menu that still says
@@ -1279,6 +1273,7 @@ Scope {
         }
 
         function page(name: string): void {
+            if (name === "umbriel") name = "hyprland"
             const f = sstage.face
             for (let i = 0; i < f.pages.length; i++) {
                 if (f.pages[i].id === name)
@@ -1748,7 +1743,8 @@ Scope {
         }
     }
 
-    HyprlandFocusGrab {
+    CompositorFocusGuard {
+        namespaces: ["sekaipop-quickpanel"]
         id: grab
         windows: root.grabList
         onCleared: {
@@ -1767,13 +1763,13 @@ Scope {
     // A transparent window over the whole screen, under the phone: any click on it
     // closes the launcher (the click itself is used up). It sits on the Top layer and
     // the phone's window is on Overlay while Apps is up, so the phone is always above it.
-    readonly property bool useCatcher: open && launching
+    readonly property bool useCatcher: open
 
     PanelWindow {
         id: catcher
 
         screen: root.targetScreen
-        visible: root.useCatcher && win.visible
+        visible: root.useCatcher && (win.visible || deckWindow.visible)
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Top
@@ -1862,11 +1858,62 @@ Scope {
     }
 
     // ===== the panel =====
+    // First cyberdeck screen: keep the mature phone routes for Apps/Settings/
+    // Wallpapers while sharing the same open/close IPC and source services.
+    readonly property bool deckActive: ShellStyle.cyberpunk && root.open
+        && !root.settingsShown && !root.launching && !panelFace.powerMenuOpen
+
+    MediaSource { id: deckMedia }
+    ResourceSource { id: deckResources; wanted: root.deckActive }
+    PanelWindow {
+        id: deckWindow
+        screen: root.targetScreen
+        visible: root.deckActive || deckLift > 0.001
+        property real deckLift: root.deckActive ? 1 : 0
+        Behavior on deckLift { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        color: "transparent"
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.namespace: "sekaipop-cyberdeck"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: root.deckActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        anchors.bottom: true
+        margins.bottom: 18
+        readonly property real fit: Math.max(0.1, Math.min(1, ((screen ? screen.width : 1200) - 36) / 1240,
+            ((screen ? screen.height : 800) - 90) / 820))
+        implicitWidth: Math.ceil(1240 * fit)
+        implicitHeight: Math.ceil(820 * fit)
+        mask: Region { item: deck }
+        CyberdeckViewport {
+            id: deck
+            active: deckWindow.visible
+            scale: deckWindow.fit
+            transformOrigin: Item.TopLeft
+            y: (1 - deckWindow.deckLift) * deckWindow.height
+            opacity: deckWindow.deckLift
+            source: root.source
+            media: deckMedia
+            resources: deckResources
+            notifications: root.notificationSource.entries
+            clockText: Qt.formatDateTime(clock.date, SettingsService.flag("time.use24h") ? "HH:mm" : "hh:mmAP")
+            dateText: Qt.formatDate(clock.date, "dddd / MMM dd")
+            focus: root.deckActive
+            Keys.onEscapePressed: root.close()
+            onCloseRequested: root.close()
+            onDismissRequested: key => root.notificationSource.dismiss(key)
+            onSearchRequested: query => root.goApps(query)
+            onRouteRequested: route => {
+                if (route === "lock") { root.close(); root.source.lock() }
+                else root.goOn(root.targetScreen, route)
+            }
+        }
+    }
+
     PanelWindow {
         id: win
 
         screen: root.targetScreen
-        visible: root.up || stage.lift < stage.hiddenLift || root.settingsShown
+        visible: (!ShellStyle.cyberpunk || root.settingsShown || root.launching || panelFace.powerMenuOpen
+            || root.alertUp || root.peekUp) && (root.up || stage.lift < stage.hiddenLift || root.settingsShown)
         color: "transparent"
 
         // Sits on the bottom edge, centered (no left / right anchor), and
@@ -2766,7 +2813,7 @@ Scope {
                         onTileRemoveRequested: index => root.source.removeTile(index)
                         onTileAddRequested: id => root.source.addTile(id)
                         onTileColumnsRequested: columns => root.source.setTileColumns(columns)
-                        onRefreshRequested: refreshHyprland.running = true
+                        onRefreshRequested: refreshCompositor.running = true
                         // The phone turns into the Settings where it stands.
                         onSettingsRequested: root.openSettings(root.targetScreen)
                         // claim() first: hideToast() makes toastActive false,

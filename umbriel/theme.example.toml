@@ -1,0 +1,20 @@
+# SekaiPop / Umbriel theme scaffold — intentionally inactive.
+# This file is not included, generated from the shell palette, or applied.
+# It contains no active TOML settings. Future theme work can use these mappings:
+#
+# [colors]
+# background = <shell background>
+# text_primary = <shell foreground>
+# text_muted = <shell secondary foreground>
+# accent_primary = <shell primary accent>
+# accent_secondary = <shell secondary accent>
+#
+# [colors.border]
+# focused = <shell focused border>
+# unfocused = <shell inactive border>
+#
+# [appearance]
+# corner_radius = <shell corner radius>
+#
+# TODO: define palette conversion, validation, explicit opt-in, and restore behavior
+# before adding any runtime writer or connecting this to AppThemeService.

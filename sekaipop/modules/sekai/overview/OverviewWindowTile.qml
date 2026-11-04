@@ -52,14 +52,14 @@ Item {
     // carry the prefix, so normalise before looking one up.
     readonly property string addrKey: {
         const a = root.toplevel ? (root.toplevel.address ?? "") : ""
-        return a.startsWith("0x") ? a : "0x" + a
+        return a
     }
 
     // Fresh hyprctl data first; Quickshell's own cached copy only as a
     // fallback for the instant between a window opening and the first
     // refresh landing.
     readonly property var windowData: {
-        const d = HyprlandData.windowByAddress[root.addrKey]
+        const d = CompositorData.windowByAddress[root.addrKey]
         if (d)
             return d
         const l = root.toplevel ? root.toplevel.lastIpcObject : null

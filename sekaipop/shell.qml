@@ -324,7 +324,7 @@ ShellRoot {
     // of every window on every workspace, draggable between them — shows
     // until you type. AppSource has nothing to poll, so unlike
     // QuickSource there's no `active` gate; window data
-    // (services/HyprlandData.qml) is refreshed only while it's open.
+    // (services/CompositorData.qml) is refreshed only while it's open.
     AppSource {
         id: appState
     }
@@ -364,11 +364,7 @@ ShellRoot {
 
         // `ipc call overview style` says which overview a key opens;
         // `... style scroll` / `... style board` switches it (remembered).
-        function style(name: string): string {
-            if (name === "scroll" || name === "board")
-                SettingsService.set("overview.style", name)
-            return SettingsService.get("overview.style")
-        }
+        function style(name: string): string { return "umbriel" }
     }
 
     // The corner phone (LauncherPhone.qml): what is left of the old launcher phone

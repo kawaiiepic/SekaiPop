@@ -2,11 +2,10 @@ import QtQuick
 import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Io
-import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.sekai.editMode
@@ -151,7 +150,7 @@ PanelWindow {
 
     // Same Lua/non-Lua fork Bar.qml uses for its own dispatches — see its comment
     // on `usingLua` for why only an explicit `false` counts as "not Lua".
-    readonly property bool usingLua: Hyprland.usingLua !== false
+    readonly property bool usingLua: Compositor.usingLua !== false
 
     // A toplevel's window class / app id ("org.mozilla.firefox", "kitty"...), same
     // fallback chain as Bar.qml's `windowClass`.
@@ -212,7 +211,7 @@ PanelWindow {
         const local = {}
         let focused = ""
         const here = dockWindow.screen ? dockWindow.screen.name : ""
-        for (const t of Hyprland.toplevels.values) {
+        for (const t of Compositor.toplevels.values) {
             const cls = dockWindow.toplevelClass(t)
             if (cls === "")
                 continue
@@ -293,7 +292,7 @@ PanelWindow {
         const address = DockService.hexAddr(rawAddress)
         if (address === "")
             return
-        Hyprland.dispatch(dockWindow.usingLua
+        Compositor.dispatch(dockWindow.usingLua
             ? "hl.dsp.window.close({ window = \"address:" + address + "\" })"
             : "closewindow address:" + address)
     }
@@ -982,7 +981,8 @@ PanelWindow {
     // down (drag a file out of a window, drop it on the shelf, drag another), so it
     // stays open while you click and work outside the dock, and only its X (or a click
     // on the Shelf key) closes it. While it is open the dock stays shown (`revealed`).
-    HyprlandFocusGrab {
+    CompositorFocusGuard {
+        namespaces: ["sekaipop-dock"]
         windows: [dockWindow]
         active: dockWindow.menuOpen || dockWindow.folderOpen
                 || (dockWindow.toolOpen !== "" && dockWindow.toolOpen !== "shelf")
@@ -1465,7 +1465,7 @@ PanelWindow {
     WlrLayershell.namespace: "sekaipop-dock"
     // The folder card has a text box (the rename) and the Files stack listens for Esc /
     // Backspace; the dock never takes the keyboard otherwise.
-    WlrLayershell.keyboardFocus: (dockWindow.folderOpen || dockWindow.toolOpen === "files") ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: (dockWindow.menuOpen || dockWindow.folderOpen || (dockWindow.toolOpen !== "" && dockWindow.toolOpen !== "shelf")) ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     // The window itself runs the whole length of its edge and is transparent, so
     // without this the empty strip on either side of the pill would swallow clicks
@@ -1559,7 +1559,7 @@ PanelWindow {
     //   0 = the windows touch.
     readonly property real pinnedWindowGap: 8
     readonly property real pinnedInvisible: dockWindow.look === "transparent" ? dockWindow.pillPaddingV : 0
-    readonly property real pinnedTrim: Math.max(0, HyprlandSettings.num("general.gaps_out"))
+    readonly property real pinnedTrim: Math.max(0, CompositorSettings.num("layout.gap", 8))
                                        - Math.round(dockWindow.pinnedWindowGap * dockWindow.uiScale)
                                        + Math.round(dockWindow.pinnedInvisible * dockWindow.uiScale)
     Binding {

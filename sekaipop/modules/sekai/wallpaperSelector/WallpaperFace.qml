@@ -128,11 +128,17 @@ Item {
     readonly property bool lockMode: WallpaperService.separateLock && face.target === "lock"
 
     // What is on this monitor right now.
-    readonly property string desktopPath: WallpaperService.pathFor(face.screenName)
+    readonly property string desktopPath: WallpaperEngineService.active
+        ? WallpaperEngineService.currentPath : WallpaperService.pathFor(face.screenName)
     readonly property string lockPath: WallpaperService.lockPathFor(face.screenName)
     readonly property string currentPath: face.lockMode ? face.lockPath : face.desktopPath
     readonly property string otherPath: !WallpaperService.separateLock ? ""
                                         : (face.lockMode ? face.desktopPath : face.lockPath)
+
+    // The viewer renders an Engine preview image, but applied-state checks
+    // must compare the package folder used for playback, not preview.jpg.
+    readonly property string viewedWallpaperPath: face.viewIndex >= 0 && face.viewIndex < face.matched.length
+        && face.matched[face.viewIndex].engine ? face.matched[face.viewIndex].filePath : face.viewPath
 
     readonly property bool viewIsVideo: face.viewPath !== "" && WallpaperService.isVideo(face.viewPath)
 
@@ -146,6 +152,7 @@ Item {
     // The design: docs/handoffs/wallhaven; docs/WALLHAVEN.md says where it departs.
     property string source: "folder"
     readonly property bool onWallhaven: face.source === "wallhaven"
+    readonly property bool onEngine: face.source === "engine"
     property bool filtersOpen: false
     // The picture open in the viewer, when it is a Wallhaven one.
     readonly property var viewWh: face.viewIndex >= 0 && face.viewIndex < face.matched.length
@@ -167,9 +174,10 @@ Item {
         whSearchDelay.stop()
         if (face.onWallhaven && (WallhavenService.page === 0 || WallhavenService.query !== ""))
             WallhavenService.search("", face.screenPxW, face.screenPxH)
-        // Back on the folder with something new in it (a Wallhaven download): read it again,
-        // so the download is there at once rather than behind the Refresh dot.
-        if (!face.onWallhaven && face.hasNew)
+        // Engine replaces `items` with its package list. Always restore the
+        // folder snapshot when switching back, even when the folder itself
+        // has not changed (and therefore hasNew is false).
+        if (!face.onWallhaven && !face.onEngine)
             face.refresh()
         else
             face.recompute()
@@ -198,6 +206,18 @@ Item {
             })
         }
         return out
+    }
+
+    Connections {
+        target: WallpaperEngineService
+        function onEntriesChanged() {
+            if (face.onEngine)
+                face.recompute()
+        }
+        function onActiveChanged() {
+            if (face.onEngine)
+                face.recompute()
+        }
     }
 
     Connections {
@@ -360,9 +380,41 @@ Item {
         grid.positionViewAtBeginning()
     }
 
+    function engineItems() {
+        const out = []
+        for (const it of WallpaperEngineService.entries) {
+            const prevs = WallpaperEngineService.previewCandidates(it.path)
+            out.push({
+                fileName: it.name || it.id,
+                filePath: it.path,
+                fileSize: 0,
+                fileModified: 0,
+                engine: true,
+                engineId: it.id,
+                previewCandidates: prevs,
+                previewPath: prevs.length ? prevs[0] : ""
+            })
+        }
+        return out
+    }
+
     function recompute() {
         if (face.onWallhaven) {
             face.matched = face.wallhavenItems()
+            return
+        }
+        if (face.onEngine) {
+            const viewed = face.viewIndex >= 0 && face.viewIndex < face.matched.length
+                ? face.matched[face.viewIndex].filePath : ""
+            const list = face.engineItems()
+            const q = face.searchText.trim().toLowerCase()
+            face.items = list
+            face.matched = q === "" ? list
+                : list.filter(it => it.fileName.toLowerCase().indexOf(q) !== -1)
+            if (viewed !== "") {
+                face.viewIndex = face.matched.findIndex(it => it.filePath === viewed)
+                if (face.viewIndex >= 0) face.viewName = face.matched[face.viewIndex].fileName
+            }
             return
         }
         const q = face.searchText.trim().toLowerCase()
@@ -424,8 +476,14 @@ Item {
             return
         face.sortOpen = false
         face.viewIndex = k
-        face.viewPath = face.matched[k].filePath
-        face.viewName = face.matched[k].fileName
+        {
+            const it = face.matched[k]
+            // Engine packages are folders; show preview.* in the viewer.
+            face.viewPath = it && it.engine
+                ? ((it.previewCandidates || [])[0] || it.previewPath || "")
+                : (it ? it.filePath : "")
+            face.viewName = it ? it.fileName : ""
+        }
         face.nearEnd(k)
         grid.currentIndex = k
         // the wheel follows the viewer's Left / Right, so Gallery lands on it
@@ -475,6 +533,16 @@ Item {
     // `path`: the picture to set (the wheel passes the one in front); the
     // viewer's keys leave it out and mean the one it has open.
     function setDesktop(all, path) {
+        // Wallpaper Engine package: hand off to linux-wallpaperengine.
+        if (face.onEngine || (face.viewIndex >= 0 && face.matched[face.viewIndex] && face.matched[face.viewIndex].engine)) {
+            const it = face.viewIndex >= 0 ? face.matched[face.viewIndex] : null
+            const bg = (path !== undefined && path !== "") ? path : (it ? (it.engineId || it.filePath) : face.viewPath)
+            if (!bg)
+                return
+            WallpaperEngineService.setWallpaper(bg, it ? it.fileName : "")
+            face.flash("desktop")
+            return
+        }
         // A Wallhaven picture that isn't downloaded yet: download it, then this again.
         if ((path === undefined || path === "") && face.viewWh && face.viewPath === "") {
             const wh = face.viewWh
@@ -984,11 +1052,13 @@ Item {
                         NumberAnimation { from: 0.55; to: 1; duration: 700; easing.type: Easing.InOutSine }
                     }
 
-                    Image {
+                    WallpaperPreview {
                         id: thumb
 
                         anchors.fill: parent
-                        source: cell.wh ? cell.wh.thumb : WallpaperService.thumbUrl(cell.path)
+                        previewEntry: cell.modelData
+                        fallbackSource: previewEntry && previewEntry.engine ? ""
+                            : (cell.wh ? cell.wh.thumb : WallpaperService.thumbUrl(cell.path))
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         // Decoded as dense as the screen it lands in (the phone's
@@ -1128,7 +1198,8 @@ Item {
                         anchors.centerIn: parent
                         width: parent.width - 18
                         horizontalAlignment: Text.AlignHCenter
-                        text: cell.wh ? cell.wh.resolution.replace("x", "\u00d7") : face.baseName(cell.modelData.fileName)
+                        text: cell.wh ? cell.wh.resolution.replace("x", "\u00d7")
+                            : (cell.modelData.engine ? cell.modelData.fileName : face.baseName(cell.modelData.fileName))
                         elide: Text.ElideMiddle
                         color: mt.pInk
                         font.family: mt.fontFamily
@@ -1537,12 +1608,19 @@ Item {
                     asynchronous: true
                 }
 
-                Image {
+                WallpaperPreview {
                     id: bigPicture
 
                     anchors.fill: parent
-                    source: face.viewPath === "" ? (face.viewWh ? face.viewWh.full : "")
-                            : (face.viewIsVideo ? WallpaperService.thumbUrl(face.viewPath) : "file://" + face.viewPath)
+                    previewEntry: face.viewIndex >= 0 && face.viewIndex < face.matched.length
+                        ? face.matched[face.viewIndex] : null
+                    fallbackSource: previewEntry && previewEntry.engine ? ""
+                        : (face.viewPath === "" ? (face.viewWh ? face.viewWh.full : "")
+                            : (face.viewIsVideo ? WallpaperService.thumbUrl(face.viewPath) : "file://" + face.viewPath))
+                    onPreviewPathChanged: {
+                        if (previewEntry && previewEntry.engine)
+                            face.viewPath = previewPath
+                    }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     // As dense as the screen it lands in (was a fixed 1680 x 1050,
@@ -1756,7 +1834,7 @@ Item {
                 spacing: 10
 
                 Rectangle {
-                    visible: face.viewPath !== "" && face.viewPath === face.desktopPath
+                    visible: face.viewedWallpaperPath !== "" && face.viewedWallpaperPath === face.desktopPath
                     width: onDesk.implicitWidth + 28
                     height: 32
                     radius: 16

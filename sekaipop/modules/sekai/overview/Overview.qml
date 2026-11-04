@@ -1,15 +1,14 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 
 // The Overview: one card per workspace, each a to-scale mock of the screen with a
 // *live picture* of every window on it (ScreencopyView, laid out from real window
-// geometry, see services/HyprlandData.qml).
+// geometry, see services/CompositorData.qml).
 //
 // (This used to be the Overview and the App Launcher as one surface, with a search pill
 // over the cards. The launcher is gone from here: the Apps screen of the phone does it
@@ -38,7 +37,7 @@ import qs.modules.common.widgets
 //   FilmStrip.qml             the film base + sprocket holes behind the cards
 //   OverviewWorkspaceCard.qml a card's film frame + drop target
 //   OverviewWindowTile.qml    one live thumbnail + the drag
-//   services/HyprlandData.qml hyprctl clients / monitors, polled only while open
+//   services/CompositorData.qml hyprctl clients / monitors, polled only while open
 //
 // Way to open it:
 //   qs -c sekaipop ipc call overview toggle       (also show / hide)
@@ -85,10 +84,10 @@ Scope {
     readonly property real boardPadBottom: 30
 
     // Same Lua/non-Lua fork Bar.qml and Dock.qml use for their dispatches.
-    readonly property bool usingLua: Hyprland.usingLua !== false
+    readonly property bool usingLua: Compositor.usingLua !== false
 
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s
@@ -98,7 +97,7 @@ Scope {
 
     // True when the ScrollOverview plugin is the one picked (Settings ->
     // Hyprland -> Overview). The board below is then only the fallback.
-    readonly property bool scrollStyle: SettingsService.get("overview.style") === "scroll"
+    readonly property bool scrollStyle: true
 
     // Opens this shell's own board.
     function openBoard(screen) {
@@ -187,7 +186,7 @@ Scope {
 
     onOpenChanged: {
         // Window data is only refreshed while we're open.
-        HyprlandData.active = open
+        CompositorData.active = open
         if (open) {
             exitAnim.stop()
             root.closing = false
@@ -205,13 +204,13 @@ Scope {
 
     function addrKey(t) {
         const a = t ? (t.address ?? "") : ""
-        return a.startsWith("0x") ? a : "0x" + a
+        return a
     }
 
     // Fresh hyprctl data, else Quickshell's own cached copy (only good
     // for the instant before the first refresh lands).
     function dataFor(t) {
-        const d = HyprlandData.windowByAddress[root.addrKey(t)]
+        const d = CompositorData.windowByAddress[root.addrKey(t)]
         if (d)
             return d
         const l = t ? t.lastIpcObject : null
@@ -229,7 +228,7 @@ Scope {
 
     function countFor(ws) {
         let n = 0
-        for (const t of Hyprland.toplevels.values) {
+        for (const t of Compositor.toplevels.values) {
             if (!root.shown(t))
                 continue
             const d = root.dataFor(t)
@@ -265,7 +264,7 @@ Scope {
     // The monitor this Overview is showing on.
     readonly property var overviewMonitor: {
         const name = root.targetScreen ? root.targetScreen.name : ""
-        return HyprlandData.monitors.find(m => m.name === name) ?? null
+        return CompositorData.monitors.find(m => m.name === name) ?? null
     }
     readonly property int overviewMonitorId: root.overviewMonitor ? root.overviewMonitor.id : -1
     readonly property var overviewGeom: {
@@ -280,7 +279,7 @@ Scope {
 
     // The workspace showing on this monitor right now.
     readonly property int activeWs: {
-        const m = root.targetScreen ? Hyprland.monitorFor(root.targetScreen) : null
+        const m = root.targetScreen ? Compositor.monitorFor(root.targetScreen) : null
         return (m && m.activeWorkspace) ? m.activeWorkspace.id : 1
     }
 
@@ -382,7 +381,7 @@ Scope {
         const ws = d.workspace ? d.workspace.id : -1
         if (ws < 1 || ws > root.workspaceCount)
             return null
-        const g = root.monGeom(HyprlandData.monitors.find(m => m.id == d.monitor))
+        const g = root.monGeom(CompositorData.monitors.find(m => m.id == d.monitor))
         if (!g)
             return null
 
@@ -415,7 +414,7 @@ Scope {
         if (!d)
             return
         root.close()
-        Hyprland.dispatch(root.usingLua
+        Compositor.dispatch(root.usingLua
             ? "hl.dsp.focus({ window = \"address:" + d.address + "\" })"
             : "focuswindow address:" + d.address)
     }
@@ -423,20 +422,20 @@ Scope {
     function closeWindow(d) {
         if (!d)
             return
-        Hyprland.dispatch(root.usingLua
+        Compositor.dispatch(root.usingLua
             ? "hl.dsp.window.close({ window = \"address:" + d.address + "\" })"
             : "closewindow address:" + d.address)
     }
 
     function switchToWorkspace(id) {
         root.close()
-        Hyprland.dispatch(root.usingLua
+        Compositor.dispatch(root.usingLua
             ? "hl.dsp.focus({ workspace = " + id + " })"
             : "workspace " + id)
     }
 
     function moveWindowToWorkspace(address, workspaceId) {
-        Hyprland.dispatch(root.usingLua
+        Compositor.dispatch(root.usingLua
             ? "hl.dsp.window.move({ workspace = " + workspaceId + ", follow = false, window = \"address:" + address + "\" })"
             : "movetoworkspacesilent " + workspaceId + ",address:" + address)
     }
@@ -444,7 +443,7 @@ Scope {
     // x / y are absolute, in the same layout coordinates hyprctl's own
     // `at` uses.
     function moveFloatingWindow(address, x, y) {
-        Hyprland.dispatch(root.usingLua
+        Compositor.dispatch(root.usingLua
             ? "hl.dsp.window.move({ x = \"" + x + "\", y = \"" + y + "\", window = \"address:" + address + "\" })"
             : "movewindowpixel exact " + x + " " + y + ",address:" + address)
     }
@@ -472,7 +471,7 @@ Scope {
             return
         if (Math.abs(dx) + Math.abs(dy) < 4)
             return
-        const g = root.monGeom(HyprlandData.monitors.find(m => m.id == d.monitor))
+        const g = root.monGeom(CompositorData.monitors.find(m => m.id == d.monitor))
         if (!g)
             return
         // Move it by how far it was dragged, converted from the mock
@@ -666,7 +665,7 @@ Scope {
                                     // its capture running) as windows come and go
                                     // instead of rebuilding every tile each time.
                                     model: ScriptModel {
-                                        values: Hyprland.toplevels.values.filter(t => root.shown(t))
+                                        values: Compositor.toplevels.values.filter(t => root.shown(t))
                                     }
                                     delegate: OverviewWindowTile {
                                         required property var modelData

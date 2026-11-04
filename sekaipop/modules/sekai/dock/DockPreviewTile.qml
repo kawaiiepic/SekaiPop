@@ -44,10 +44,9 @@ Item {
     readonly property string title: root.toplevel
         ? (root.toplevel.title || root.toplevel.lastIpcObject?.title || "") : ""
 
-    // hyprctl uses "0x..." addresses; Quickshell's may or may not have the
-    // prefix (same note as OverviewWindowTile.qml).
-    readonly property string addrKey: root.address.startsWith("0x") ? root.address : "0x" + root.address
-    readonly property var hyprData: HyprlandData.windowByAddress[root.addrKey] ?? null
+    // Umbriel window IDs are opaque strings.
+    readonly property string addrKey: root.address
+    readonly property var hyprData: CompositorData.windowByAddress[root.addrKey] ?? null
 
     // The window's own shape, so the picture isn't stretched.
     readonly property real aspect: {

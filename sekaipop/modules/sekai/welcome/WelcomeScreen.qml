@@ -1,8 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
-import QtQuick
 import qs.services
+import QtQuick
 
 // The welcome screen's windows (the page itself is WelcomePage.qml; when it
 // shows up is WelcomeService.qml).
@@ -20,7 +19,7 @@ import qs.services
 Scope {
     id: root
 
-    readonly property string focusedName: Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+    readonly property string focusedName: Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
 
     Loader {
         active: WelcomeService.active

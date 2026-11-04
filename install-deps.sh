@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # install-deps.sh: installs everything SekaiPop needs to be a full working desktop
-# on Arch / CachyOS / EndeavourOS (anything with pacman), starting from a minimal Hyprland system.
+# on Arch / CachyOS / EndeavourOS (anything with pacman), for an Umbriel session.
 #
 # It does the same three jobs as end-4's "./setup install", for this rice:
 #   1. packages      (repo packages with pacman, the rest from the AUR with yay/paru)
 #   2. setup         (services, groups, user folders, Google Sans Flex font)
-#   3. session glue  (a small Hyprland file for portals / screen sharing / autostart)
+#   3. session notes (Umbriel autostart is configured separately)
 # It does NOT copy the rice itself and does NOT touch GPU drivers (same as end-4's).
 #
 # Usage:  ./install-deps.sh [options]
 #   --dry-run             show what would happen, change nothing
 #   --yes                 no questions, pass --noconfirm to pacman/yay
 #   --core-only           only what the shell cannot start without
-#   --with-optional       also songrec, mpvpaper, aubio, nwg-displays, Discord-voice tools, hypridle...
+#   --with-optional       also songrec, mpvpaper, aubio, wdisplays, Discord-voice tools, hypridle...
 #   --no-desktop-layer    skip portals, file manager, fonts, keyring, icon theme (you already have a desktop)
 #   --gpu amd|intel|nvidia|skip   which Vulkan/GL driver set to add (default: detect; nvidia is never installed)
 #   --ddc                 set up i2c access for external-monitor brightness (ddcutil)
@@ -119,7 +119,7 @@ ok "distro: $(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}")"
 # ---------------------------------------------------------------- package lists
 # "a|b" = try a in the repos, else b (b is then taken from the AUR). Plain names not in the repos go to the AUR.
 CORE=(
-  hyprland "quickshell|quickshell-git"
+  "quickshell|quickshell-git"
   qt6-base qt6-declarative "qt6-multimedia-ffmpeg|qt6-multimedia" qt6-svg qt6-imageformats qt6-wayland qt6-shadertools
   dbus polkit mesa
   pipewire wireplumber pipewire-pulse libpulse
@@ -130,21 +130,21 @@ CORE=(
 )
 DESKTOP_LAYER=(
   xorg-xwayland
-  xdg-desktop-portal xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
+  xdg-desktop-portal xdg-desktop-portal-gtk
   gvfs adwaita-icon-theme
   noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-jetbrains-mono-nerd
   gnome-keyring libsecret pipewire-alsa
 )
 FEATURES=(
   "matugen|matugen-bin" cava easyeffects
-  grim slurp cliphist wtype hyprpicker hyprsunset
+  grim slurp cliphist wtype hyprpicker wlsunset
   imagemagick tesseract tesseract-data-eng swappy wf-recorder ffmpeg
   brightnessctl ddcutil zenity kitty
   plasma-nm kde-cli-tools blueman
   dconf glib2 adw-gtk-theme xorg-xrdb
   libcanberra sound-theme-freedesktop pacman-contrib
 )
-OPTIONAL=( python-aubio songrec mpvpaper nwg-displays hypridle nodejs pnpm cloudflare-warp-bin )
+OPTIONAL=( python-aubio songrec mpvpaper wdisplays hypridle nodejs pnpm cloudflare-warp-bin )
 
 WANT=("${CORE[@]}")
 if [ "$CORE_ONLY" = 0 ]; then
@@ -304,81 +304,10 @@ if [ "$DDC" = 1 ]; then
     run_sh 'echo i2c-dev | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null'
 fi
 
-# ---------------------------------------------------------------- 3. session glue
-step "3. Hyprland session glue"
-if [ "$SESSION" = 1 ]; then
-    HYPR="$HOME/.config/hypr"
-    mode=""
-    [ -f "$HYPR/hyprland.lua" ] && mode=lua
-    [ -z "$mode" ] && [ -f "$HYPR/hyprland.conf" ] && mode=conf
-    if [ -z "$mode" ]; then
-        warn "no Hyprland config found in $HYPR: start Hyprland once so it creates one, then run this script again with just: ./install-deps.sh --no-update --core-only"
-    else
-        tmp=$(mktemp)
-        autostart=1; grep -rqsE '(qs|quickshell)[[:space:]]+-c[[:space:]]+sekaipop' "$HYPR" 2>/dev/null && autostart=0
-        qtline=1;    grep -rqs 'QT_QPA_PLATFORMTHEME' "$HYPR" 2>/dev/null && qtline=0
-        have qt6ct || qtline=0
-        [ -n "${QT_QPA_PLATFORMTHEME:-}" ] && qtline=0   # something already themes Qt apps (e.g. kde): don't override it
-        [ "$IS_KDE" = 1 ] && qtline=0
-        if [ "$mode" = lua ]; then
-            f="$HYPR/sekaipop_session.lua"
-            {
-                echo '-- sekaipop_session.lua  (written by install-deps.sh; safe to edit or delete)'
-                echo '-- Glue a bare Hyprland session needs so portals (screen sharing) and apps work.'
-                echo 'hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")'
-                [ "$qtline" = 1 ] && echo 'hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")'
-                echo 'hl.on("hyprland.start", function()'
-                echo '    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")'
-                [ "$autostart" = 1 ] && echo '    hl.exec_cmd("qs -c sekaipop")'
-                echo 'end)'
-            } > "$tmp"
-            reqline='pcall(require, "sekaipop_session")'
-        else
-            f="$HYPR/sekaipop_session.conf"
-            {
-                echo '# sekaipop_session.conf  (written by install-deps.sh; safe to edit or delete)'
-                echo 'env = ELECTRON_OZONE_PLATFORM_HINT,auto'
-                [ "$qtline" = 1 ] && echo 'env = QT_QPA_PLATFORMTHEME,qt6ct'
-                echo 'exec-once = dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP'
-                [ "$autostart" = 1 ] && echo 'exec-once = qs -c sekaipop'
-            } > "$tmp"
-            reqline='source = ~/.config/hypr/sekaipop_session.conf'
-        fi
-        if [ -e "$f" ]; then
-            if cmp -s "$tmp" "$f"; then
-                info "$f is already up to date"
-            else
-                warn "$f already exists, left as it is (new version saved to $f.new)"
-                run cp "$tmp" "$f.new"
-            fi
-            # an earlier run may have forced qt6ct onto a system whose Qt apps are themed by KDE: take that line out
-            if [ "$IS_KDE" = 1 ] && grep -qsE 'QT_QPA_PLATFORMTHEME.*qt6ct' "$f"; then
-                if ask "Remove the QT_QPA_PLATFORMTHEME=qt6ct line from $f (you use KDE theming)? A backup is saved."; then
-                    run cp "$f" "$f.bak"
-                    run sed -i -E '/QT_QPA_PLATFORMTHEME.*qt6ct/d' "$f"
-                else
-                    warn "delete the QT_QPA_PLATFORMTHEME line from $f yourself if Qt apps look wrong"
-                fi
-            fi
-        else
-            run cp "$tmp" "$f"
-            [ "$DRY" = 1 ] || info "wrote $f"
-        fi
-        rm -f "$tmp"
-        cfg="$HYPR/hyprland.$mode"
-        if grep -qsF 'sekaipop_session' "$cfg"; then
-            info "$cfg already loads sekaipop_session"
-        elif ask "Add  $reqline  to $cfg (a backup is saved next to it)?"; then
-            run cp "$cfg" "$cfg.sekaipop.bak"
-            run_sh "printf '\\n%s\\n' '$reqline' >> '$cfg'"
-            [ "$DRY" = 1 ] || info "added  $reqline  to $cfg"
-        else
-            warn "add this line to $cfg yourself:  $reqline"
-        fi
-        [ "$mode" = lua ] && ! grep -rqs 'sekaipop_overrides' "$HYPR/hyprland.lua" 2>/dev/null && \
-            warn 'also add this line to hyprland.lua so the Settings-panel Hyprland changes survive reloads:  pcall(require, "sekaipop_overrides")'
-    fi
-fi
+# Umbriel's configuration belongs to the user. The installer supplies a mergeable
+# example instead of writing autostart or bindings into an existing compositor config.
+info "Install Umbriel and xdg-desktop-portal-umbriel using upstream build/package instructions."
+info "Merge umbriel/sekaipop.toml into ~/.config/umbriel/config.toml."
 
 # ---------------------------------------------------------------- done
 [ "${SEKAIPOP_FULL_INSTALL:-0}" = 1 ] || step "Done"
@@ -391,7 +320,7 @@ fi
 if [ "${#FAILED[@]}" -eq 0 ]; then result ok "Dependencies are in place"; else result bad "Finished with ${#FAILED[@]} problem(s), see above"; fi
 printf '\n  %sNext%s\n' "$B" "$Z"
 nx "Log out and back in (group membership and user services need a fresh session)."
-printf '      %sStart Hyprland as the plain Hyprland session, not the uwsm one.%s\n' "$D" "$Z"
+printf '      %sStart your Umbriel session.%s\n' "$D" "$Z"
 nx "Copy the rice folder to ${B}~/.config/quickshell/sekaipop${Z}"
 printf '      %sand run shaders/compile-shaders.sh once if your Qt is not 6.12.%s\n' "$D" "$Z"
 nx "Run ${B}./check-deps.sh${Z}, it should end with \"core missing: 0\"."

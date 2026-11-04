@@ -1,8 +1,7 @@
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import QtQuick
 import QtQuick.Layouts
-import qs.services
 import qs.modules.common
 
 // The card that used to drop down from the bar's scale button (removed; the
@@ -84,7 +83,7 @@ Scope {
         onTriggered: grab.active = root.grabWanted
     }
 
-    HyprlandFocusGrab {
+    CompositorFocusGuard {
         id: grab
         windows: [popup, root.parentWindow]
         onCleared: root.closeRequested()
@@ -180,6 +179,7 @@ Scope {
     }
 
     PopupWindow {
+        grabFocus: true
         id: popup
         visible: root.open && root.parentWindow !== null
 
