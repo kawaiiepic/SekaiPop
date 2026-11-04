@@ -1,0 +1,69 @@
+--- a/sekaipop/modules/sekai/background/WallpaperLayer.qml
++++ b/sekaipop/modules/sekai/background/WallpaperLayer.qml
+@@ -45,13 +45,22 @@
+     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
+     readonly property var mt: Theme.of(screen)
+ 
+-readonly property bool wallpaperEnabled:SettingsService.flag("wallpaper.enabled")
+-onWallpaperEnabledChanged: {
+-    if (wallpaperEnabled)
+-        restoreWallpaperResources();
+-    else
+-        releaseWallpaperResources();
+-}
++readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled")
++    readonly property bool engineActive: WallpaperService.engineActive
++    // Image layer is suppressed while linux-wallpaperengine draws the background.
++    readonly property bool layerActive: win.wallpaperEnabled && !win.engineActive
++    onLayerActiveChanged: {
++        if (win.layerActive)
++            restoreWallpaperResources();
++        else
++            releaseWallpaperResources();
++    }
++    onWallpaperEnabledChanged: {
++        if (win.layerActive)
++            restoreWallpaperResources();
++        else
++            releaseWallpaperResources();
++    }
+     required property var modelData
+     screen: modelData
+ 
+@@ -290,7 +299,7 @@
+     }
+ 
+     function restoreWallpaperResources() {
+-        if (!win.wallpaperEnabled)
++        if (!win.layerActive)
+             return;
+ 
+         const image = WallpaperService.imageFor(
+
+--- a/WallpaperService.qml
++++ b/WallpaperService.qml
+@@ -40,6 +40,16 @@
+ Singleton {
+     id: root
+ 
++    // linux-wallpaperengine owns the background while active; any normal
++    // image/video pick must stop it so WallpaperLayer can show again.
++    readonly property bool engineActive: WallpaperEngineService.active
++
++    function stopEngineIfNeeded() {
++        if (WallpaperEngineService.active)
++            WallpaperEngineService.stop()
++    }
++
++
+     // ===== what is on each monitor =====
+     readonly property bool perMonitor: SettingsService.flag("wallpaper.perMonitor")
+ 
+@@ -630,6 +640,7 @@
+     function setWallpaper(path, screenName) {
+         if (!path || path.length === 0)
+             return;
++        root.stopEngineIfNeeded();
+         const target = (root.perMonitor && screenName) ? screenName : "";
+         // A video needs its first frame before anything can blend to it.
+         if (root.isVideo(path) && !root.stills[path]) {
