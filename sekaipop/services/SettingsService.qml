@@ -276,6 +276,7 @@ Singleton {
         "systemTheme.bounceDark": true,
         // ===== Icons & cursor (empty = leave whatever the system has) =====
         // The shell's own icons when they are not filled: outline | broken | line-duotone | bold-duotone (filled ones are always Bold).
+        "appearance.shellTheme": "default", // default | cyberpunk; shell only
         "appearance.iconStyle": "outline",
         "appearance.iconTheme": "",
         "appearance.cursorTheme": "",

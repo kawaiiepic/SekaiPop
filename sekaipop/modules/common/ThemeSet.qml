@@ -20,20 +20,21 @@ QtObject {
     // just the two stops of the accent gradient, whatever colour that is.
     // Theme.of() sets it to a monitor's own palette.
     property var pal: ThemeService.palette
+    readonly property var styledPalette: ShellStyle.cyberpunk ? ShellStyle.palette : pal
 
     // True for the Monochrome theme: the decorative pastels below turn into greys.
-    readonly property bool mono: pal.mono === true
+    readonly property bool mono: styledPalette.mono === true
 
-    readonly property color colBorder: pal.border  // outline / shadow / dark text
-    readonly property color colBg: "#ffffff"
-    readonly property color accentCyan: pal.A
-    readonly property color accentMint: pal.B
+    readonly property color colBorder: styledPalette.border  // outline / shadow / dark text
+    readonly property color colBg: ShellStyle.cyberpunk ? "#0b1220" : "#ffffff"
+    readonly property color accentCyan: styledPalette.A
+    readonly property color accentMint: styledPalette.B
     readonly property color textWhite: "#ffffff"
 
     // ===== Modes =====
-    readonly property string mode: ThemeService.mode
-    readonly property bool dark: ThemeService.dark          // true for dark AND darker
-    readonly property bool darker: ThemeService.darker
+    readonly property string mode: ShellStyle.cyberpunk ? "dark" : ThemeService.mode
+    readonly property bool dark: ShellStyle.cyberpunk || ThemeService.dark          // true for dark AND darker
+    readonly property bool darker: !ShellStyle.cyberpunk && ThemeService.darker
 
     // Light mode: how much of the theme's border colour stays in the border
     // and in the drop shadow (0 = white, 1 = the full navy). Lower = lighter.
@@ -76,12 +77,12 @@ QtObject {
     // every group theme (and matugen) gets its own tint of dark. Darker goes
     // the other way, below the palette's dark tone.
     readonly property color surface: darker
-        ? Qt.darker(Qt.color(pal.deep), darkerFactor)
-        : (dark ? Qt.lighter(Qt.color(pal.deep), 1.18) : "#ffffff")
+        ? Qt.darker(Qt.color(styledPalette.deep), darkerFactor)
+        : (dark ? Qt.lighter(Qt.color(styledPalette.deep), 1.18) : "#ffffff")
     readonly property color surfaceHover: dark ? Qt.lighter(surface, 1.35) : "#f2f2f2"
-    readonly property color surfaceDivider: dark ? Qt.lighter(surface, 1.75) : pal.divider
+    readonly property color surfaceDivider: dark ? Qt.lighter(surface, 1.75) : styledPalette.divider
     // The INNER rings. Dark: white. Darker: a dim grey. Light: as always.
-    readonly property color ringWhite: darker
+    readonly property color ringWhite: ShellStyle.cyberpunk ? "#23465b" : darker
         ? Qt.lighter(surface, darkerRingLift)
         : (dark ? Qt.tint(Qt.color("#ffffff"), Qt.rgba(colBorder.r, colBorder.g, colBorder.b, darkRingTint)) : "#ffffff")   // the gap ring inside a Pill
     // The flat cards (the bar's popups, the launcher's search pill and results)
@@ -91,13 +92,13 @@ QtObject {
     // is drawn over the edge of the fill, so no card changes size. Light mode
     // has none (a white ring on a white card would not show).
     readonly property real cardRing: dark ? borderWidth : 0
-    readonly property color surfaceRing: darker
+    readonly property color surfaceRing: ShellStyle.cyberpunk ? "#23465b" : darker
         ? Qt.lighter(surface, darkerRingLift * 0.8)
         : (dark ? Qt.tint(Qt.color("#ffffff"), Qt.rgba(colBorder.r, colBorder.g, colBorder.b, darkRingTint + 0.1)) : "#d9d9d9")   // the bar / dock inner ring
     readonly property color surfaceTint: dark
         ? Qt.tint(surface, Qt.rgba(accentCyan.r, accentCyan.g, accentCyan.b, 0.2))
-        : pal.hoverTint                                                                // hover wash
-    readonly property color ink: dark ? Qt.color(pal.divider) : pal.border             // text and icons on a surface
+        : styledPalette.hoverTint                                                                // hover wash
+    readonly property color ink: dark ? Qt.color(styledPalette.divider) : styledPalette.border             // text and icons on a surface
     readonly property color inkSub: Qt.rgba(ink.r, ink.g, ink.b, 0.667)
     // The launcher / overview's warm paper tones, and their dark stand-ins.
     readonly property color paper: dark ? Qt.lighter(surface, 1.28) : "#f5f1e6"
@@ -135,11 +136,11 @@ QtObject {
     // The tint behind dialogs / the power menu: the palette's dark tone in
     // Dark and Darker, a pale wash in Light.
     readonly property color scrim: dark
-        ? Qt.color(pal.deep)
+        ? Qt.color(styledPalette.deep)
         : Qt.tint(Qt.color("#ffffff"), Qt.rgba(colBorder.r, colBorder.g, colBorder.b, 0.10))
 
     // ===== Classic panel look =====
-    readonly property bool classic: dark && !darker
+    readonly property bool classic: !ShellStyle.cyberpunk && dark && !darker
     readonly property color pSurface: classic ? colBg : surface
     readonly property color pSurfaceHover: classic ? colHover : surfaceHover
     readonly property color pSurfaceDivider: classic ? colDivider : surfaceDivider
@@ -166,12 +167,12 @@ QtObject {
 
     // Other colours that used to be hard-coded navy / teal in a few files
     // and now follow the theme too.
-    readonly property color colDeep: pal.deep            // dialog + scrim background (was #232235)
-    readonly property color colHoverTint: pal.hoverTint  // pale hover wash on white buttons (was #d9fff6)
+    readonly property color colDeep: styledPalette.deep            // dialog + scrim background (was #232235)
+    readonly property color colHoverTint: styledPalette.hoverTint  // pale hover wash on white buttons (was #d9fff6)
 
     // The phone mock-up's plastics (PhoneBody.qml).
-    readonly property color phoneRimHighlight: pal.rimHi
-    readonly property color phoneBezel: pal.bezel
+    readonly property color phoneRimHighlight: styledPalette.rimHi
+    readonly property color phoneBezel: styledPalette.bezel
     // Phone glass geometry: the one place the rim + bezel thickness lives, so
     // PhoneBody and every dimming scrim that has to cover exactly the visible
     // glass stay in step when the bezel is retuned.
@@ -179,12 +180,12 @@ QtObject {
     readonly property real phoneBezelWidth: 9
     readonly property real phoneScreenInset: phoneRimWidth + phoneBezelWidth
     readonly property real phoneCornerRadius: 100
-    readonly property color phoneWallLight: pal.wallLight
-    readonly property color phoneWallMid: pal.wallMid
-    readonly property color phoneWallDark: pal.wallDark
-    readonly property color phoneHardware: pal.hardware
-    readonly property color phoneLens: pal.lens
-    readonly property color phoneLensGlint: pal.glint
+    readonly property color phoneWallLight: styledPalette.wallLight
+    readonly property color phoneWallMid: styledPalette.wallMid
+    readonly property color phoneWallDark: styledPalette.wallDark
+    readonly property color phoneHardware: styledPalette.hardware
+    readonly property color phoneLens: styledPalette.lens
+    readonly property color phoneLensGlint: styledPalette.glint
 
     // The five Project Sekai card attributes — Cool, Cute, Happy,
     // Mysterious, Pure — as the pastel fills of the attribute icons. Used
@@ -197,8 +198,8 @@ QtObject {
         : ["#8EE3EF", "#FF9ECB", "#FFE066", "#B39DDB", "#A5E6A5"]
 
     readonly property int pillHeight: 36
-    readonly property int radiusOuter: 13
-    readonly property int radiusBadge: 15
+    readonly property int radiusOuter: ShellStyle.radius(13)
+    readonly property int radiusBadge: ShellStyle.radius(15)
     readonly property int borderWidth: 3
     // The white line between a block's navy outline and its colour (a Pill's ring on the
     // desktop cards' keys and digit blocks), and the white ring inside a sticker text's navy
@@ -283,13 +284,13 @@ QtObject {
     // matugen), so they re-colour with it: `capLit` is the lit key / the focused app's dot,
     // `capLitSoft` the running app's dot.
     readonly property color capLit: accentCyan
-    readonly property color capLitSoft: Qt.color(pal.glint)
+    readonly property color capLitSoft: Qt.color(styledPalette.glint)
     // The workspace dots of the Capsule bar: one colour each. The lit colour first, then the
     // soft one, the second accent stop and the palette's light wall and pale divider tones,
     // so five neighbours stay apart even in a theme whose two accents are close.
     readonly property var capWsColors: mono
         ? attributeColors.map(c => Qt.color(c))
-        : [capLit, capLitSoft, accentMint, Qt.color(pal.wallLight), Qt.color(pal.divider)]
+        : [capLit, capLitSoft, accentMint, Qt.color(styledPalette.wallLight), Qt.color(styledPalette.divider)]
 
     // Is `item` inside a bar drawn in the Capsule style (on any edge)? Status_Bar.qml sets
     // `capsuleBar` while that style is up; Pill, MaterialIcon and the workspace
@@ -376,7 +377,7 @@ QtObject {
 
     // Free since Nov 2025 on Google Fonts (SIL Open Font License) —
     // grab it there and drop the .ttf in ~/.local/share/fonts.
-    readonly property string fontFamily: "Google Sans Flex"
+    readonly property string fontFamily: ShellStyle.cyberpunk ? "monospace" : "Google Sans Flex"
     readonly property int fontSize: 16
 
     // Icons: the Solar Icon Set (assets/icons, SVG), drawn by MaterialIcon.qml
@@ -402,7 +403,7 @@ QtObject {
     // exist on your system Qt falls back to the weight, so nothing
     // breaks. See what yours has with:
     //   fc-list "Google Sans Flex" style
-    readonly property string fontStyleBold: "ExtraBold"
+    readonly property string fontStyleBold: ShellStyle.cyberpunk ? "Bold" : "ExtraBold"
 
     // Two-line pills (Media, Active Window): bold first line, lighter
     // second line. A pill with only one line uses the idle size.
@@ -421,5 +422,5 @@ QtObject {
     readonly property int fontSizeMenu: 14
     readonly property int menuRowHeight: 32
     readonly property color colHover: "#f2f2f2"       // hovered menu row
-    readonly property color colDivider: pal.divider   // menu separator line
+    readonly property color colDivider: styledPalette.divider   // menu separator line
 }

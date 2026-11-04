@@ -78,8 +78,10 @@ selected.settings.set = first.root.set;
 selected.root.setWallpaper('/custom Steam library/431960/123', 'Saved Engine');
 first.root.set('wallpaper.engine.workshopPath', '/custom Steam library/431960');
 first.root.set('wallpaper.engine.flags', '--fps 24');
+first.root.set('appearance.shellTheme', 'cyberpunk');
 const restarted = realSettings();
 restarted.root.restore(first.saver.text);
+assert.equal(restarted.root.get('appearance.shellTheme'), 'cyberpunk', 'shell theme survives restart');
 for (const [key, value] of Object.entries({active:true, currentId:'123',
     currentPath:'/custom Steam library/431960/123', workshopPath:'/custom Steam library/431960', flags:'--fps 24'}))
     assert.equal(restarted.root.get('wallpaper.engine.' + key), value);

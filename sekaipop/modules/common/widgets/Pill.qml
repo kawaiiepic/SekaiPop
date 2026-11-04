@@ -57,7 +57,7 @@ Item {
 
     property color fillColor: classicScope ? mt.pSurface : mt.surface
     property Gradient fillGradient: null
-    property real cornerRadius: height / 2
+    property real cornerRadius: ShellStyle.radius(height / 2)
     property real ringWidth: 8
 
     // A ring drawn over the outer edge of the fill (inside, so the pill does
@@ -103,7 +103,7 @@ Item {
         y: root.shadowDy
         width: root.capWidth
         height: root.capHeight
-        radius: root.cornerRadius
+        radius: ShellStyle.radius(root.cornerRadius)
         color: root.capRim ? mt.capShade
             : (root.classicScope ? mt.pLineShadow : mt.lineShadow)
         antialiasing: true
@@ -164,7 +164,7 @@ Item {
             id: face
             visible: !root.capsule && !root.bare
             anchors.fill: parent
-            radius: root.cornerRadius
+            radius: ShellStyle.radius(root.cornerRadius)
             border.width: root.borderWidth
             border.color: root.capRim ? mt.capRim
                 : (root.classicScope ? mt.pLine : mt.line)
@@ -188,7 +188,7 @@ Item {
             id: fill
             anchors.fill: face
             anchors.margins: root.capsule ? 0 : root.ringWidth
-            radius: root.capsule ? Math.min(width, height) / 2 : Math.max(0, root.cornerRadius - root.ringWidth)
+            radius: root.capsule ? Math.min(width, height) / 2 : Math.max(0, ShellStyle.radius(root.cornerRadius) - root.ringWidth)
             color: root.bare ? "transparent"
                 : (root.capsule
                     ? (root.capKeepsFill ? root.fillColor : mt.capChip)

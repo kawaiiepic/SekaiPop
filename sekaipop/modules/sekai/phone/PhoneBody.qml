@@ -35,7 +35,7 @@ Item {
     // ===== the flat design this is built around =====
     property real faceWidth: 654
     property real faceHeight: 1214
-    property real cornerRadius: 100
+    property real cornerRadius: ShellStyle.cyberpunk ? 48 : 100
     // A landscape phone (the Settings Panel): the same body turned a quarter
     // turn anticlockwise, so the camera cut-out is on the LEFT edge, the
     // charging port and speaker holes are on the right-hand wall (the one the

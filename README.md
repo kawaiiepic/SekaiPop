@@ -77,6 +77,18 @@ A live Umbriel/Quickshell session is still required to verify visual placement, 
 
 Original shell and assets: [Blapples/SekaiPop](https://github.com/Blapples/SekaiPop). Original documentation and detailed credits are preserved in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md). The `hypr/` configuration and Hyprland helper scripts remain upstream reference material and are not installed or used by this port. GPL-3.0 licensing is unchanged.
 
+## Shell themes
+
+In **Settings → Quick → Look → Shell theme**, choose **Cyberpunk** for dark navy
+surfaces, cyan/magenta accents, yellow highlights, monospace text and sharper shared
+controls. It applies live across the shell, including per-monitor themes, phone
+panels and the paper/film views. Choose **Default** to return to your existing
+palette and light/dark mode. The selection is saved across restarts.
+
+This skin changes SekaiPop itself; it does not change Umbriel, GTK/Qt applications,
+your wallpaper, or their saved theme settings. No extra fonts or shader compilation
+are required. Circular artwork, avatars and status indicators keep their shapes.
+
 ## Umbriel theme scaffold
 
 [umbriel/theme.example.toml](umbriel/theme.example.toml) starts the compositor theme integration with a commented palette mapping. The installer copies it to `~/.config/umbriel/sekaipop-theme.example.toml` for reference. It contains no active settings, is not included in the compositor config, and is not connected to the shell's theme service. No colors or appearance settings are changed.
