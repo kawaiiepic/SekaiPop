@@ -50,8 +50,7 @@ PanelWindow {
     // A transparent Wayland surface still receives every pointer event unless
     // its input region is empty. Disabled MouseAreas alone do not pass events
     // through to linux-wallpaperengine's separate background surface.
-    readonly property bool enginePointerPassThrough: win.engineActive
-        && SettingsService.flag("wallpaper.engine.interactive") && !EditMode.active
+    readonly property bool enginePointerPassThrough: WallpaperService.engineOwnsDesktop
     mask: Region {
         width: win.enginePointerPassThrough ? 0 : win.width
         height: win.enginePointerPassThrough ? 0 : win.height

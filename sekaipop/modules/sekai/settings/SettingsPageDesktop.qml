@@ -31,8 +31,8 @@ SettingsPage {
 
         SettingToggle {
             icon: "touch_app"
-            label: "Interact with Engine wallpapers"
-            detail: "Clicks and hover reach Engine. Turn off to use the desktop right-click menu instead"
+            label: "Wallpaper handles desktop clicks"
+            detail: "ON: Engine receives clicks and hides desktop widgets. OFF: Quickshell handles clicks and restores widgets"
             checked: SettingsService.flag("wallpaper.engine.interactive")
             onToggled: SettingsService.toggle("wallpaper.engine.interactive")
         }
@@ -41,7 +41,7 @@ SettingsPage {
             visible: WallpaperService.engineActive && SettingsService.flag("wallpaper.engine.interactive")
             icon: "edit"
             label: "Edit Desktop"
-            detail: "Edit widgets while Engine receives desktop clicks"
+            detail: "Temporarily restore widgets and Quickshell clicks for editing"
             onActivated: EditMode.open("")
         }
 

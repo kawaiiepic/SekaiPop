@@ -232,7 +232,7 @@ Singleton {
         // Wallpaper Engine selection and renderer configuration must be registered
         // here: set() and restore() intentionally reject unknown settings.
         "wallpaper.engine.active": false,
-        "wallpaper.engine.interactive": true, // pass desktop pointer events to the renderer
+        "wallpaper.engine.interactive": true, // Engine owns desktop clicks and hides widgets
         "wallpaper.engine.currentId": "",
         "wallpaper.engine.currentPath": "",
         "wallpaper.engine.workshopPath": "",

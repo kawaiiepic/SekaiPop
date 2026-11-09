@@ -43,6 +43,10 @@ Singleton {
     // linux-wallpaperengine owns the background while active; any normal
     // image/video pick must stop it so WallpaperLayer can show again.
     readonly property bool engineActive: WallpaperEngineService.active
+    // One policy owns both the wallpaper input region and the desktop widget
+    // loaders. Keep saved widget visibility and positions untouched.
+    readonly property bool engineOwnsDesktop: root.engineActive
+        && SettingsService.flag("wallpaper.engine.interactive") && !EditMode.active
 
     function stopEngineIfNeeded() {
         if (WallpaperEngineService.active)

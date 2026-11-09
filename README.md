@@ -81,10 +81,14 @@ Original shell and assets: [Blapples/SekaiPop](https://github.com/Blapples/Sekai
 
 Engine wallpapers receive desktop clicks and hover by default. SekaiPop's
 transparent wallpaper surface uses an empty input region while Engine is active;
-widgets keep their own input areas. Edit Desktop temporarily restores shell input.
+all desktop widgets (including clones, pinned notes and plugins) are hidden. Their
+saved visibility, contents and positions are preserved. Edit Desktop temporarily
+restores widgets and shell input.
 
-**Settings → Desktop → Wallpaper → Interact with Engine wallpapers** switches
-between renderer interaction and SekaiPop's desktop right-click menu. Wayland
+**Settings → Desktop → Wallpaper → Wallpaper handles desktop clicks** switches
+between renderer interaction with hidden widgets (ON), and SekaiPop's desktop
+right-click menu with the usual widgets restored (OFF). This only takes effect
+while an Engine wallpaper is active. Wayland
 routes all pointer buttons to one surface, so the background cannot receive Engine
 left-clicks and SekaiPop right-clicks at the same time. Use **Edit Desktop** in that
 settings section, or `qs -c sekaipop ipc call desktopedit open`, to edit widgets.

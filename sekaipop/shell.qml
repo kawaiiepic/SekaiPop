@@ -769,7 +769,11 @@ ShellRoot {
     // stutter under ten widgets being created in the same frame. Their own "shown" switches,
     // positions and contents live in the services and are not touched.
     // Settings -> General -> Launcher & lock -> "Sleep the desktop while locked" turns it off.
+    // The existing loader gate includes clones, pinned notes and plugins, so
+    // wallpaper interaction hides every desktop widget without rewriting any
+    // of their saved shown switches. Edit Desktop temporarily releases ownership.
     readonly property bool widgetsAllowed: GameModeService.loaded && !GameModeService.enabled && !LockState.desktopAsleep
+        && !WallpaperService.engineOwnsDesktop
 
     // How many widgets may be built so far after an unlock (see `woke`). 99 = all of them,
     // which is what it is at start, in Game Mode and with the lock sleep off: nothing waits.
