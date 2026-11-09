@@ -1,0 +1,173 @@
+--- a/sekaipop/modules/sekai/background/WallpaperLayer.qml
++++ b/sekaipop/modules/sekai/background/WallpaperLayer.qml
+@@ -45,13 +45,22 @@
+     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
+     readonly property var mt: Theme.of(screen)
+ 
+-readonly property bool wallpaperEnabled:SettingsService.flag("wallpaper.enabled")
+-onWallpaperEnabledChanged: {
+-    if (wallpaperEnabled)
+-        restoreWallpaperResources();
+-    else
+-        releaseWallpaperResources();
+-}
++readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled")
++    readonly property bool engineActive: WallpaperService.engineActive
++    // Image layer is suppressed while linux-wallpaperengine draws the background.
++    readonly property bool layerActive: win.wallpaperEnabled && !win.engineActive
++    onLayerActiveChanged: {
++        if (win.layerActive)
++            restoreWallpaperResources();
++        else
++            releaseWallpaperResources();
++    }
++    onWallpaperEnabledChanged: {
++        if (win.layerActive)
++            restoreWallpaperResources();
++        else
++            releaseWallpaperResources();
++    }
+     required property var modelData
+     screen: modelData
+ 
+@@ -290,7 +299,7 @@
+     }
+ 
+     function restoreWallpaperResources() {
+-        if (!win.wallpaperEnabled)
++        if (!win.layerActive)
+             return;
+ 
+         const image = WallpaperService.imageFor(
+--- a/sekaipop/services/WallpaperService.qml
++++ b/sekaipop/services/WallpaperService.qml
+@@ -40,6 +40,16 @@
+ Singleton {
+     id: root
+ 
++    // linux-wallpaperengine owns the background while active; any normal
++    // image/video pick must stop it so WallpaperLayer can show again.
++    readonly property bool engineActive: WallpaperEngineService.active
++
++    function stopEngineIfNeeded() {
++        if (WallpaperEngineService.active)
++            WallpaperEngineService.stop()
++    }
++
++
+     // ===== what is on each monitor =====
+     readonly property bool perMonitor: SettingsService.flag("wallpaper.perMonitor")
+ 
+@@ -630,6 +640,7 @@
+     function setWallpaper(path, screenName) {
+         if (!path || path.length === 0)
+             return;
++        root.stopEngineIfNeeded();
+         const target = (root.perMonitor && screenName) ? screenName : "";
+         // A video needs its first frame before anything can blend to it.
+         if (root.isVideo(path) && !root.stills[path]) {
+--- a/sekaipop/modules/sekai/wallpaperSelector/WallpaperFace.qml
++++ b/sekaipop/modules/sekai/wallpaperSelector/WallpaperFace.qml
+@@ -146,6 +146,7 @@
+     // The design: docs/handoffs/wallhaven; docs/WALLHAVEN.md says where it departs.
+     property string source: "folder"
+     readonly property bool onWallhaven: face.source === "wallhaven"
++    readonly property bool onEngine: face.source === "engine"
+     property bool filtersOpen: false
+     // The picture open in the viewer, when it is a Wallhaven one.
+     readonly property var viewWh: face.viewIndex >= 0 && face.viewIndex < face.matched.length
+@@ -169,7 +170,7 @@
+             WallhavenService.search("", face.screenPxW, face.screenPxH)
+         // Back on the folder with something new in it (a Wallhaven download): read it again,
+         // so the download is there at once rather than behind the Refresh dot.
+-        if (!face.onWallhaven && face.hasNew)
++        if (!face.onWallhaven && !face.onEngine && face.hasNew)
+             face.refresh()
+         else
+             face.recompute()
+@@ -198,6 +199,18 @@
+             })
+         }
+         return out
++    }
++
++    Connections {
++        target: WallpaperEngineService
++        function onEntriesChanged() {
++            if (face.onEngine)
++                face.recompute()
++        }
++        function onActiveChanged() {
++            if (face.onEngine)
++                face.recompute()
++        }
+     }
+ 
+     Connections {
+@@ -360,9 +373,34 @@
+         grid.positionViewAtBeginning()
+     }
+ 
++    function engineItems() {
++        const out = []
++        for (const it of WallpaperEngineService.entries) {
++            const prevs = WallpaperEngineService.previewCandidates(it.path)
++            out.push({
++                fileName: it.name || it.id,
++                filePath: it.path,
++                fileSize: 0,
++                fileModified: 0,
++                engine: true,
++                engineId: it.id,
++                previewPath: prevs.length ? prevs[0] : ""
++            })
++        }
++        return out
++    }
++
+     function recompute() {
+         if (face.onWallhaven) {
+             face.matched = face.wallhavenItems()
++            return
++        }
++        if (face.onEngine) {
++            const list = face.engineItems()
++            const q = face.searchText.trim().toLowerCase()
++            face.items = list
++            face.matched = q === "" ? list
++                : list.filter(it => it.fileName.toLowerCase().indexOf(q) !== -1)
+             return
+         }
+         const q = face.searchText.trim().toLowerCase()
+@@ -424,8 +462,12 @@
+             return
+         face.sortOpen = false
+         face.viewIndex = k
+-        face.viewPath = face.matched[k].filePath
+-        face.viewName = face.matched[k].fileName
++        {
++            const it = face.matched[k]
++            // Engine packages are folders; show preview.* in the viewer.
++            face.viewPath = (it && it.engine && it.previewPath) ? it.previewPath : (it ? it.filePath : "")
++            face.viewName = it ? it.fileName : ""
++        }
+         face.nearEnd(k)
+         grid.currentIndex = k
+         // the wheel follows the viewer's Left / Right, so Gallery lands on it
+@@ -475,6 +517,16 @@
+     // `path`: the picture to set (the wheel passes the one in front); the
+     // viewer's keys leave it out and mean the one it has open.
+     function setDesktop(all, path) {
++        // Wallpaper Engine package: hand off to linux-wallpaperengine.
++        if (face.onEngine || (face.viewIndex >= 0 && face.matched[face.viewIndex] && face.matched[face.viewIndex].engine)) {
++            const it = face.viewIndex >= 0 ? face.matched[face.viewIndex] : null
++            const bg = (path !== undefined && path !== "") ? path : (it ? (it.engineId || it.filePath) : face.viewPath)
++            if (!bg)
++                return
++            WallpaperEngineService.setWallpaper(bg, it ? it.fileName : "")
++            face.flash("desktop")
++            return
++        }
+         // A Wallhaven picture that isn't downloaded yet: download it, then this again.
+         if ((path === undefined || path === "") && face.viewWh && face.viewPath === "") {
+             const wh = face.viewWh

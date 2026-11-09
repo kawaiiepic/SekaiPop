@@ -29,6 +29,22 @@ SettingsPage {
             onActivated: if (page.host) page.host.wallpapersRequested()
         }
 
+        SettingToggle {
+            icon: "touch_app"
+            label: "Wallpaper handles desktop clicks"
+            detail: "ON: Engine receives clicks and hides desktop widgets. OFF: Quickshell handles clicks and restores widgets"
+            checked: SettingsService.flag("wallpaper.engine.interactive")
+            onToggled: SettingsService.toggle("wallpaper.engine.interactive")
+        }
+
+        SettingAction {
+            visible: WallpaperService.engineActive && SettingsService.flag("wallpaper.engine.interactive")
+            icon: "edit"
+            label: "Edit Desktop"
+            detail: "Temporarily restore widgets and Quickshell clicks for editing"
+            onActivated: EditMode.open("")
+        }
+
         SettingAction {
             icon: "folder_open"
             label: "Wallpaper folder"
@@ -1041,9 +1057,7 @@ SettingsPage {
                     label: appRow.modelData.label
                     detail: AppThemeService.stateOf(appRow.modelData.id) === "not installed"
                             ? "Not installed"
-                            : (appRow.modelData.id === "hyprland" && HyprlandSettings.isLua && !HyprlandSettings.linked
-                               ? "Live now; see the Hyprland page's one-time setup to keep it"
-                               : appRow.modelData.note)
+                            : appRow.modelData.note
                     checked: SettingsService.flag("appTheme." + appRow.modelData.id)
                     onToggled: AppThemeService.setEnabled(appRow.modelData.id,
                         !SettingsService.flag("appTheme." + appRow.modelData.id))

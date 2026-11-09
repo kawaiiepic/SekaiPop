@@ -1,7 +1,6 @@
 import Quickshell
-import Quickshell.Hyprland
-import QtQuick
 import qs.services
+import QtQuick
 import qs.modules.common
 import qs.modules.common.widgets
 
@@ -173,7 +172,7 @@ Scope {
         onTriggered: grab.active = host.grabWanted
     }
 
-    HyprlandFocusGrab {
+    CompositorFocusGuard {
         id: grab
         windows: [popup, host.parentWindow]
         onCleared: host.closeRequested()
@@ -237,6 +236,7 @@ Scope {
     }
 
     PopupWindow {
+        grabFocus: true
         id: popup
         visible: (host.open || host.reveal > 0.001 || host.settling) && host.parentWindow !== null
 

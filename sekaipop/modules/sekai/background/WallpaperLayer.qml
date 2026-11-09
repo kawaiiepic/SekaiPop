@@ -1,8 +1,7 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
-import Quickshell.Wayland
 import qs.services
+import Quickshell.Wayland
 import qs.modules.common
 import qs.modules.sekai.editMode
 
@@ -46,18 +45,36 @@ PanelWindow {
     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
     readonly property var mt: Theme.of(screen)
 
-readonly property bool wallpaperEnabled:SettingsService.flag("wallpaper.enabled")
-onWallpaperEnabledChanged: {
-    if (wallpaperEnabled)
-        restoreWallpaperResources();
-    else
-        releaseWallpaperResources();
-}
+    readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled")
+    readonly property bool engineActive: WallpaperService.engineActive
+    // A transparent Wayland surface still receives every pointer event unless
+    // its input region is empty. Disabled MouseAreas alone do not pass events
+    // through to linux-wallpaperengine's separate background surface.
+    readonly property bool enginePointerPassThrough: WallpaperService.engineOwnsDesktop
+    mask: Region {
+        width: win.enginePointerPassThrough ? 0 : win.width
+        height: win.enginePointerPassThrough ? 0 : win.height
+    }
+    // Image layer is suppressed while linux-wallpaperengine draws the background.
+    readonly property bool layerActive: win.wallpaperEnabled && !win.engineActive
+    onLayerActiveChanged: {
+        if (win.layerActive)
+            restoreWallpaperResources();
+        else
+            releaseWallpaperResources();
+    }
+    onWallpaperEnabledChanged: {
+        if (win.layerActive)
+            restoreWallpaperResources();
+        else
+            releaseWallpaperResources();
+    }
     required property var modelData
     screen: modelData
 
     // ===== sole background-layer client =====
-    WlrLayershell.layer: WlrLayer.Background
+    WlrLayershell.layer: win.engineActive && WallpaperService.restackingDesktop
+        ? WlrLayer.Bottom : WlrLayer.Background
     WlrLayershell.namespace: "sekaipop-wallpaper"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
@@ -99,7 +116,7 @@ onWallpaperEnabledChanged: {
     // ===== Parallax =====
     readonly property bool parallaxOn: SettingsService.flag("wallpaper.parallax")
     readonly property real parallaxZoom: parallaxOn ? 1 + SettingsService.get("wallpaper.parallaxAmount") / 100 : 1
-    readonly property var hyprMonitor: win.screen ? Hyprland.monitorFor(win.screen) : null
+    readonly property var hyprMonitor: win.screen ? Compositor.monitorFor(win.screen) : null
     readonly property int workspaceId: hyprMonitor && hyprMonitor.activeWorkspace ? hyprMonitor.activeWorkspace.id : 1
     readonly property int workspaceCount: Math.max(2, SettingsService.get("wallpaper.parallaxWorkspaces"))
     // 0 .. 1 across the workspaces.
@@ -146,7 +163,7 @@ onWallpaperEnabledChanged: {
     readonly property bool videoPaused: win.videoPausedBase || win.videoEditing
 
     Connections {
-        target: Hyprland
+        target: Compositor
 
         function onRawEvent(event) {
             if (event.name === "fullscreen" || event.name === "workspace" || event.name === "workspacev2"
@@ -161,7 +178,7 @@ onWallpaperEnabledChanged: {
         interval: 150
         onTriggered: {
             if (videoLayer.active)
-                Hyprland.refreshWorkspaces()
+                Compositor.refreshWorkspaces()
         }
     }
 
@@ -291,7 +308,7 @@ onWallpaperEnabledChanged: {
     }
 
     function restoreWallpaperResources() {
-        if (!win.wallpaperEnabled)
+        if (!win.layerActive)
             return;
 
         const image = WallpaperService.imageFor(
@@ -407,7 +424,7 @@ onWallpaperEnabledChanged: {
 
     // This monitor's wallpaper changed.
     function show(image) {
-    if (!win.wallpaperEnabled)
+        if (!win.layerActive)
             return;
         if (image === "" || image === win.shownImage)
             return;
@@ -442,7 +459,7 @@ onWallpaperEnabledChanged: {
     readonly property string screenName: win.modelData ? win.modelData.name : ""
 
       Component.onCompleted: {
-        if (win.wallpaperEnabled && win.wantedImage !== "") {
+        if (win.layerActive && win.wantedImage !== "") {
             win.shownImage = win.wantedImage;
             win.currentSlot = win.createSlot(win.wantedImage);
         }
@@ -519,7 +536,7 @@ onWallpaperEnabledChanged: {
     // EditStage.qml), and the ring in EditFrame hides its square corners.
     Item {
         id: stage
-        visible: win.wallpaperEnabled
+        visible: win.layerActive
         width: parent.width
         height: parent.height
         x: EditMode.xFor(win.screenName, win.width, win.height, win.uiScale)
@@ -589,7 +606,7 @@ onWallpaperEnabledChanged: {
                 id: videoLayer
                 anchors.fill: parent
                 z: 5
-                 active: win.wallpaperEnabled
+                 active: win.layerActive
                     && WallpaperService.videoFor(win.screenName)
                     && !win.transitioning
                     && win.currentSlot !== null
@@ -775,7 +792,7 @@ onWallpaperEnabledChanged: {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.RightButton
-        enabled: !EditMode.active
+        enabled: !EditMode.active && !win.enginePointerPassThrough
         onClicked: mouse => EditMode.openMenu(win.screenName, mouse.x, mouse.y)
     }
 }

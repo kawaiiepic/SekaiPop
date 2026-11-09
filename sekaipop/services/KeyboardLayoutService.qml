@@ -1,10 +1,10 @@
 pragma Singleton
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Io
 
-// Which keyboard layout is active ("us", "ru", ...), read from Hyprland. State only,
+// Which keyboard layout is active ("us", "ru", ...), read from Compositor. State only,
 // no window: the bar's layout pill (Bar.qml) and both lockscreen looks (LockSurface.qml,
 // LockCalendar.qml) read it, so they always agree and Hyprland is asked once, not once
 // per bar.
@@ -56,109 +56,21 @@ Singleton {
     readonly property string code: root.layoutCount > 1 && root.layoutName !== ""
         ? root.layoutName.slice(0, 2).toUpperCase() : ""
 
-    // `hyprctl switchxkblayout` is its own hyprctl command, not a dispatcher, so it is the
-    // same on a Lua-mode and a hyprlang config. "all" moves every keyboard together, so the
-    // code shown is always the one you are typing with.
-    function cycle() {
-        Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "next"])
-    }
-
-    // Straight to one layout, on every keyboard.
+    function cycle() { Compositor.action("keyboard-layout-next") }
     function select(index) {
-        root.activeIndex = index
-        Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", String(index)])
+        const count = root.layoutCount
+        if (index < 0 || index >= count) return
+        const steps = (index - root.activeIndex + count) % count
+        for (let i = 0; i < steps; ++i) root.cycle()
     }
-
-    // Ask again. A read already under way is let finish and then run once more, not killed:
-    // a killed read ends with nothing in it, and an event, a reload and a lock can arrive
-    // within the same moment.
-    property bool again: false
-    function refresh() {
-        if (fetch.running)
-            root.again = true
-        else
-            fetch.running = true
+    function refresh() {}
+    function sync() {
+        const state = Compositor.keyboardLayout
+        root.layoutIds = state.names || []
+        root.layoutCount = root.layoutIds.length
+        root.activeIndex = state.current_index || 0
+        root.layoutName = root.layoutIds[root.activeIndex] || ""
     }
-
-    // A read can still fail (a shell reloading under it, no Hyprland at all), and nothing
-    // else would ask again until Hyprland sent an event. So a failed read is tried again a
-    // few times, not for ever: with no Hyprland (niri) it never works.
-    property int failures: 0
-
-    Process {
-        id: fetch
-        running: true
-        command: ["hyprctl", "-j", "devices"]
-        onExited: {
-            if (root.again) {
-                root.again = false
-                fetch.running = true
-            }
-        }
-        stdout: StdioCollector {
-            id: collector
-            onStreamFinished: {
-                try {
-                    const parsed = JSON.parse(collector.text)
-                    const kb = (parsed.keyboards || []).find(k => k.main === true) || (parsed.keyboards || [])[0]
-                    if (kb) {
-                        root.layoutName = kb.active_keymap || ""
-                        const ids = (kb.layout || "").split(",").map(s => s.trim()).filter(s => s.length > 0)
-                        root.layoutIds = ids
-                        root.layoutCount = ids.length
-                        root.activeIndex = kb.active_layout_index || 0
-                    }
-                    root.failures = 0
-                } catch (e) {
-                    // A reload in the middle of a read ends it with nothing in it, which is
-                    // not worth a line each time: only the last try says so.
-                    if (++root.failures < 4)
-                        refetch.restart()
-                    else
-                        console.warn("KeyboardLayoutService: couldn't parse `hyprctl -j devices` for keyboard layout: " + e + " (got " + collector.text.length + " bytes)")
-                }
-            }
-        }
-    }
-
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            // Hyprland sends "activelayout" as "<device>,<layout name>"
-            if (event.name === "activelayout" && root.layoutCount > 1) {
-                root.layoutName = event.data.substring(event.data.indexOf(",") + 1)
-                // The event gives the name, not the place in the list.
-                root.refresh()
-            }
-            // A reload can add or drop layouts (kb_layout = "us,ru"), so ask again.
-            else if (event.name === "configreloaded")
-                root.refresh()
-        }
-    }
-
-    // The Hyprland page's keyboard card changes kb_layout live: read the list again
-    // a moment after, once Hyprland has rebuilt the keymaps.
-    Connections {
-        target: HyprlandSettings
-        function onApplied(path) {
-            if (path.indexOf("input.kb_") === 0)
-                refetch.restart()
-        }
-    }
-
-    // Locking is when the code matters most and when a missed event would hurt: nobody can
-    // fix it from the lockscreen, so start from what Hyprland says right now.
-    Connections {
-        target: LockState
-        function onLockedChanged() {
-            if (LockState.locked)
-                root.refresh()
-        }
-    }
-
-    Timer {
-        id: refetch
-        interval: root.failures > 0 ? 2000 : 400
-        onTriggered: root.refresh()
-    }
+    Connections { target: Compositor; function onKeyboardLayoutChanged() { root.sync() } }
+    Component.onCompleted: root.sync()
 }

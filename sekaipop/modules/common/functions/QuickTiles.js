@@ -26,7 +26,7 @@
 var catalog = ["network", "bluetooth", "keepAwake", "microphone", "speaker",
                "notifications", "nightLight", "gameMode",
                "darkMode", "easyEffects", "warp", "screenSnip", "colorPicker",
-               "keyboard", "powerProfile", "musicRecognition", "antiFlashbang"]
+               "keyboard", "powerProfile", "musicRecognition"]
 
 // Buttons that do something once and have no on/off of their own (Screen
 // Snip, Color Picker): a click closes the panel first, then runs.

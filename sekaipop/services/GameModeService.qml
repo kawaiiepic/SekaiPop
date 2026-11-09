@@ -7,7 +7,7 @@ import qs.modules.common
 // Game Mode: the one place that says whether it is on, and the one place that
 // switches it. Everything else just reads `enabled`.
 //
-// What it does (the Hyprland half is scripts/hyprland/gamemode-state.sh, the
+// What it does (the Hyprland half is scripts/umbriel/gamemode-state.sh, the
 // shell half is wired where each thing lives):
 //   Hyprland     animations / blur / shadows / gaps / rounding off, tearing on
 //   Bar          shrinks to a fixed bar: date, clock and weather only, flat and
@@ -41,7 +41,7 @@ Singleton {
     // The Hyprland change is being applied; a second request waits for it.
     readonly property bool busy: action.running
 
-    readonly property string script: Directories.script("hyprland/gamemode-state.sh")
+    readonly property string script: Directories.script("umbriel/gamemode-state.sh")
 
     function toggle() {
         root.set(!root.enabled)
@@ -78,9 +78,9 @@ Singleton {
                 if (exitCode === 0)
                     root.enabled = true
                 else
-                    root.notifyFailed("Hyprland did not accept the change.")
+                    root.notifyFailed("Could not save Game Mode state.")
             } else if (exitCode !== 0) {
-                root.notifyFailed("Game Mode is off, but Hyprland did not reload its settings.")
+                root.notifyFailed("Could not clear Game Mode state.")
             }
         }
     }

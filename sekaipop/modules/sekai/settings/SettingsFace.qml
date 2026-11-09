@@ -79,7 +79,7 @@ Item {
         { id: "general", icon: "tune", label: "General", title: "General", sub: "How the shell behaves" },
         { id: "bar", icon: "toast", label: "Bar", title: "Bar", sub: "Where it sits and what it carries" },
         { id: "desktop", icon: "desktop_windows", label: "Desktop", title: "Desktop", sub: "Wallpaper, widgets and effects" },
-        { id: "hyprland", icon: "grid_view", label: "Hyprland", title: "Hyprland", sub: "Windows, workspaces and input" },
+        { id: "hyprland", icon: "grid_view", label: "Umbriel", title: "Umbriel", sub: "Windows, workspaces and input" },
         { id: "about", icon: "info", label: "About", longLabel: "About / Update", title: "About / Update", sub: "Version, updates and credits" }
     ]
 
@@ -840,7 +840,7 @@ Item {
 
     Component {
         id: hyprlandPage
-        SettingsPageHyprland {
+        SettingsPageUmbriel {
             host: face
             width: pageArea.width
             height: pageArea.height

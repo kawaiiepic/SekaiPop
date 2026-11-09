@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import qs.modules.common
 
 // Your Discord voice call, for the bar's Discord pill (DiscordPill.qml).
@@ -50,7 +50,7 @@ Singleton {
     readonly property bool clientWindowOpen: {
         if (root.clientSeen)
             return false
-        const list = Hyprland.toplevels?.values
+        const list = Compositor.toplevels?.values
         if (!list)
             return false
         for (const t of list) {
@@ -116,19 +116,17 @@ Singleton {
     function setMuted(value) { root.send({ cmd: "set_voice_settings", mute: value }) }
     function setDeafened(value) { root.send({ cmd: "set_voice_settings", deaf: value }) }
 
-    readonly property bool usingLua: Hyprland.usingLua !== false
+    readonly property bool usingLua: Compositor.usingLua !== false
 
     // Bring the Discord window forward (the panel's "open Discord" button).
     // False when no client window is open (Discord closed to the tray).
     function focusClient() {
-        const toplevel = (Hyprland.toplevels.values ?? []).find(t =>
+        const toplevel = (Compositor.toplevels.values ?? []).find(t =>
             root.clientClasses.indexOf(String(t?.lastIpcObject?.class ?? "").toLowerCase()) !== -1)
         let address = toplevel ? String(toplevel.lastIpcObject?.address ?? "") : ""
         if (address === "")
             return false
-        if (address.indexOf("0x") !== 0)
-            address = "0x" + address
-        Hyprland.dispatch(root.usingLua
+        Compositor.dispatch(root.usingLua
             ? "hl.dsp.focus({ window = \"address:" + address + "\" })"
             : "focuswindow address:" + address)
         return true

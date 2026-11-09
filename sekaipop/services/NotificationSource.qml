@@ -1,6 +1,6 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Services.Notifications
 import QtQuick
 
@@ -79,7 +79,7 @@ Scope {
     // wallpaper reads). Quickshell refreshes a workspace's data on workspace
     // events but not when a window goes fullscreen, so `fullscreenWatch` below
     // asks again on those events — only while the setting is on.
-    readonly property var focusedWorkspace: Hyprland.focusedMonitor ? Hyprland.focusedMonitor.activeWorkspace : null
+    readonly property var focusedWorkspace: Compositor.focusedMonitor ? Compositor.focusedMonitor.activeWorkspace : null
     readonly property bool fullscreenNow: !!(root.focusedWorkspace && root.focusedWorkspace.lastIpcObject
                                              && root.focusedWorkspace.lastIpcObject.hasfullscreen)
     // Holds announcements back right now, apart from critical ones.
@@ -571,7 +571,7 @@ Scope {
     // ===== the popups =====
     function pushPopup(entry) {
         if (popups.length === 0)
-            popupMonitor = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name
+            popupMonitor = Compositor.focusedMonitor ? Compositor.focusedMonitor.name
                 : (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
         const list = [entry].concat(popups)
         while (list.length > maxPopups) {
@@ -660,7 +660,7 @@ Scope {
     // changes; the 150 ms beat collapses a burst of them into one refresh. Nothing
     // here runs while the setting is off.
     Connections {
-        target: Hyprland
+        target: Compositor
         enabled: root.quietWhenFullscreen
 
         function onRawEvent(event) {
@@ -675,13 +675,13 @@ Scope {
     Timer {
         id: fullscreenWatch
         interval: 150
-        onTriggered: Hyprland.refreshWorkspaces()
+        onTriggered: Compositor.refreshWorkspaces()
     }
 
     // Switched on while a window is already fullscreen: look once now.
     onQuietWhenFullscreenChanged: {
         if (quietWhenFullscreen)
-            Hyprland.refreshWorkspaces()
+            Compositor.refreshWorkspaces()
     }
 
     // Quickshell's defaults for what we tell apps we can display are what this needs —

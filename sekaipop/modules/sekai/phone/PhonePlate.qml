@@ -19,7 +19,7 @@ Item {
 
     default property alias content: inner.data
 
-    property real radius: 28
+    property real radius: ShellStyle.radius(28)
     property color fill: mt.pSurface
     property Gradient fillGradient: null
     property real borderW: 3
@@ -39,7 +39,7 @@ Item {
         y: root.shadow
         width: root.faceW
         height: root.faceH
-        radius: root.radius
+        radius: ShellStyle.radius(root.radius)
         color: root.shadowColor
         antialiasing: true
     }
@@ -51,7 +51,7 @@ Item {
         y: root.pressed ? root.shadow - 1 : 0
         width: root.faceW
         height: root.faceH
-        radius: root.radius
+        radius: ShellStyle.radius(root.radius)
         color: root.fill
         gradient: root.fillGradient
         border.width: root.borderW

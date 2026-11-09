@@ -252,10 +252,6 @@ apply_icons() {
 live_cursor() {
     name="$1"; size="$2"
 
-    if command -v hyprctl >/dev/null 2>&1; then
-        hyprctl setcursor "$name" "$size" >/dev/null 2>&1 \
-            || say "hyprctl setcursor did not work (is Hyprland running?)"
-    fi
 
     # Apps started from now on (by D-Bus activation or by systemd) get the new theme too.
     if command -v dbus-update-activation-environment >/dev/null 2>&1; then

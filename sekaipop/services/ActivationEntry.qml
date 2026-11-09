@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 
 // The front door of one on-demand screen (see ComponentActivation.qml).
 //
@@ -46,7 +46,7 @@ Scope {
     property var wanted: null
 
     function focusedScreen() {
-        const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
         for (const s of Quickshell.screens) {
             if (s.name === name)
                 return s

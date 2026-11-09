@@ -48,6 +48,12 @@ ShellRoot {
         WallpaperLayer {}
     }
 
+    // Engine input ownership switch stays available while widgets are hidden.
+    Variants {
+        model: Quickshell.screens
+        EngineInputOverlay {}
+    }
+
     // The framer (PanelImages.frame(): which part of the banner, avatar or phone picture
     // shows). Built only while a picture is being framed, on the monitor it was opened for.
     Variants {
@@ -324,7 +330,7 @@ ShellRoot {
     // of every window on every workspace, draggable between them — shows
     // until you type. AppSource has nothing to poll, so unlike
     // QuickSource there's no `active` gate; window data
-    // (services/HyprlandData.qml) is refreshed only while it's open.
+    // (services/CompositorData.qml) is refreshed only while it's open.
     AppSource {
         id: appState
     }
@@ -364,11 +370,7 @@ ShellRoot {
 
         // `ipc call overview style` says which overview a key opens;
         // `... style scroll` / `... style board` switches it (remembered).
-        function style(name: string): string {
-            if (name === "scroll" || name === "board")
-                SettingsService.set("overview.style", name)
-            return SettingsService.get("overview.style")
-        }
+        function style(name: string): string { return "umbriel" }
     }
 
     // The corner phone (LauncherPhone.qml): what is left of the old launcher phone
@@ -773,7 +775,11 @@ ShellRoot {
     // stutter under ten widgets being created in the same frame. Their own "shown" switches,
     // positions and contents live in the services and are not touched.
     // Settings -> General -> Launcher & lock -> "Sleep the desktop while locked" turns it off.
+    // The existing loader gate includes clones, pinned notes and plugins, so
+    // wallpaper interaction hides every desktop widget without rewriting any
+    // of their saved shown switches. Edit Desktop temporarily releases ownership.
     readonly property bool widgetsAllowed: GameModeService.loaded && !GameModeService.enabled && !LockState.desktopAsleep
+        && !WallpaperService.engineOwnsDesktop
 
     // How many widgets may be built so far after an unlock (see `woke`). 99 = all of them,
     // which is what it is at start, in Game Mode and with the lock sleep off: nothing waits.

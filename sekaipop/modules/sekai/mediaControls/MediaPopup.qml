@@ -1,11 +1,10 @@
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Services.Mpris
 import Quickshell.Widgets
 import QtQuick
 import "MediaOwner.js" as Owner
 import "MediaMath.js" as MM
-import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.sekai.bar
@@ -67,7 +66,7 @@ SekaiPopup {
         const live = Mpris.players.values.filter(pl =>
             pl.playbackState === MprisPlaybackState.Playing || (pl.trackTitle ?? "") !== "")
         // One card per app: Zen, Chromium and mpv can report several players.
-        const list = Owner.onePerApp(live, Hyprland.toplevels.values, featured, MprisPlaybackState.Playing)
+        const list = Owner.onePerApp(live, Compositor.toplevels.values, featured, MprisPlaybackState.Playing)
         return list.slice().sort((a, b) => (b === featured ? 1 : 0) - (a === featured ? 1 : 0))
     }
 
@@ -107,19 +106,19 @@ SekaiPopup {
         : (root.showLeft ? MM.left(root.shownSec, root.length) : MM.fmt(root.length))
 
     // Which window this player lives in (see MediaOwner.js). Reading
-    // Hyprland.toplevels.values keeps it live as windows come and go.
-    readonly property var ownerInfo: root.hasPlayer ? Owner.resolve(root.p, Hyprland.toplevels.values)
+    // Compositor.toplevels.values keeps it live as windows come and go.
+    readonly property var ownerInfo: root.hasPlayer ? Owner.resolve(root.p, Compositor.toplevels.values)
                                                     : { matches: [], viaFallback: false }
-    readonly property bool usingLua: Hyprland.usingLua !== false
+    readonly property bool usingLua: Compositor.usingLua !== false
 
     // The name on a tab: the player's identity, or, when it is really a Firefox
     // fork wearing Firefox's name, the window's class ("zen-twilight" -> "Zen
-    // Twilight"). Reading Hyprland.toplevels.values keeps it live.
+    // Twilight"). Reading Compositor.toplevels.values keeps it live.
     function labelFor(pl) {
         if (!pl)
             return "Media"
         let raw = String(pl.identity ?? "")
-        const info = Owner.resolve(pl, Hyprland.toplevels.values)
+        const info = Owner.resolve(pl, Compositor.toplevels.values)
         if (info.viaFallback && info.matches.length > 0)
             raw = Owner.classOf(info.matches[0]).split(".").pop()
         return MM.appLabel(raw)
@@ -157,7 +156,7 @@ SekaiPopup {
     //
     // MprisPlayer.raise() only asks the player to raise itself, which browsers
     // answer with a taskbar "attention" flash and no workspace switch under
-    // Hyprland. So use the window found above: prefer the one whose title
+    // Compositor. So use the window found above: prefer the one whose title
     // carries the track title (a browser's title is its active tab), then the
     // focused one, then any. Switch to its workspace first and focus it second
     // (what the dock does, since focuswindow alone doesn't always cross
@@ -180,15 +179,13 @@ SekaiPopup {
         let address = String(target.address ?? target.lastIpcObject?.address ?? "")
         if (address === "")
             return
-        if (address.indexOf("0x") !== 0)
-            address = "0x" + address
 
         const ws = target.workspace?.id ?? target.lastIpcObject?.workspace?.id
         if (ws !== undefined && ws !== null)
-            Hyprland.dispatch(root.usingLua
+            Compositor.dispatch(root.usingLua
                 ? "hl.dsp.focus({ workspace = " + ws + " })"
                 : "workspace " + ws)
-        Hyprland.dispatch(root.usingLua
+        Compositor.dispatch(root.usingLua
             ? "hl.dsp.focus({ window = \"address:" + address + "\" })"
             : "focuswindow address:" + address)
     }

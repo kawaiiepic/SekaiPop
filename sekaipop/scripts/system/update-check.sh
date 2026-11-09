@@ -71,7 +71,7 @@ installed=$(mark commit)
 repo="$SEKAIPOP_REPO"
 [ -n "$repo" ] || repo=$(mark repo)
 [ -n "$repo" ] || repo=$(head -n 1 "$cfgdir/update-repo" 2>/dev/null | tr -d '\r')
-[ -n "$repo" ] || repo=https://github.com/Blapples/SekaiPop.git
+[ -n "$repo" ] || repo=https://github.com/kawaiiepic/SekaiPop.git
 ref="$SEKAIPOP_REF"
 [ -n "$ref" ] || ref=$(mark ref)
 { [ -n "$ref" ] && [ "$ref" != HEAD ]; } || ref=main

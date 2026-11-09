@@ -1,8 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
-import QtQuick
 import qs.services
+import QtQuick
 
 // The polkit password prompt (see services/PolkitService.qml for what
 // polkit is and the one-agent-per-session catch).
@@ -21,7 +20,7 @@ import qs.services
 Scope {
     id: root
 
-    readonly property string focusedName: Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+    readonly property string focusedName: Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
 
     // Loader (not just `visible`) so the dialog — and the password field
     // in it — is created fresh for every prompt instead of hanging on to

@@ -2,7 +2,6 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Hyprland
 import qs.services
 import qs.modules.common
 import "../modules/common/functions/PaletteMath.js" as PM

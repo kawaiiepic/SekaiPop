@@ -1,8 +1,7 @@
 import Quickshell
-import Quickshell.Hyprland
+import qs.services
 import Quickshell.Wayland
 import QtQuick
-import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.sekai.editMode
@@ -143,10 +142,10 @@ PanelWindow {
     // Capsule takes only the gaps_out off (no extra): its strip already holds an 8 px
     // gap under the bar, so the windows end up that far below the bar's shadow.
     readonly property real transparentTrim: win.barStyle === 2
-    ? Math.min(Math.max(0, HyprlandSettings.num("general.gaps_out")) + Math.round(win.transparentExtraGap * win.uiScale),
+    ? Math.min(Math.max(0, CompositorSettings.num("layout.gap", 8)) + Math.round(win.transparentExtraGap * win.uiScale),
                Math.round(win.stripSize * 0.6))
     : (win.barStyle === 3
-    ? Math.min(Math.max(0, HyprlandSettings.num("general.gaps_out")), Math.round(win.stripSize * 0.6))
+    ? Math.min(Math.max(0, CompositorSettings.num("layout.gap", 8)), Math.round(win.stripSize * 0.6))
     : 0)
     // An auto-hiding bar reserves nothing: the windows use the whole screen and the bar
     // slides in over them.
@@ -425,7 +424,7 @@ PanelWindow {
     Connections {
         target: PluginService
         function onPopupWanted(key) {
-            const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+            const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
             if (win.screen === null || (name !== "" && win.screen.name !== name))
                 return
             const it = statusBar.pluginToggle(key)
@@ -479,7 +478,7 @@ PanelWindow {
     Connections {
         target: EqualizerService
         function onOpenRequested() {
-            const name = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+            const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
             if (win.screen === null || (name !== "" && win.screen.name !== name))
                 return
                 if (win.eqPopupOpen) {
@@ -804,31 +803,19 @@ PanelWindow {
     }
 
     // This monitor's own workspace, falling back to the focused one
-    readonly property var monitor: Hyprland.monitorFor(screen)
-    readonly property int activeWorkspace: NiriWorkspaces.running ? NiriWorkspaces.activeOn(screen?.name ?? "") : monitor?.activeWorkspace?.id ?? Hyprland.focusedWorkspace?.id ?? 1
+    readonly property var monitor: Compositor.monitorFor(screen)
+    readonly property int activeWorkspace: monitor?.activeWorkspace?.index ?? 1
+    readonly property var occupiedWorkspaces: Compositor.workspaces.values
+        .filter(w => w.monitor?.name === screen?.name && w.toplevels.values.length > 0)
+        .map(w => w.index)
 
-    // Ids of workspaces that currently have windows. Lets the badges show the
-    // ones above the configured count only while they are in use.
-    readonly property var occupiedWorkspaces: NiriWorkspaces.running ? NiriWorkspaces.occupiedOn(screen?.name ?? "") : Hyprland.workspaces.values
-    .filter(w => w.id > 0 && w.toplevels.values.length > 0)
-    .map(w => w.id)
+    readonly property bool usingLua: Compositor.usingLua !== false
 
-    // Hyprland.usingLua is documented as a real property, but on some
-    // Quickshell builds it comes back as plain `undefined` rather than
-    // `false` (property missing, not just "not yet initialized").
-    // Treating that as "not Lua" sent old hyprlang syntax to a
-    // Lua-mode Hyprland and every dispatch failed with a Lua parse
-    // error. Only trust an explicit `false`; anything else (true, or
-    // undefined because the property doesn't exist) is treated as
-    // Lua mode, since that's Hyprland's current default and what
-    // every dispatch below is written for.
-    readonly property bool usingLua: Hyprland.usingLua !== false
-
-    // Hyprland.activeToplevel is global — the same value on every
+    // Compositor.activeToplevel is global — the same value on every
     // monitor's bar — so only treat it as *this* bar's window if it's
     // actually on this monitor's active workspace.
-    readonly property var focusedWindow: Hyprland.activeToplevel?.workspace?.id === activeWorkspace
-    ? Hyprland.activeToplevel
+    readonly property var focusedWindow: Compositor.activeToplevel?.workspace?.id === monitor?.activeWorkspace?.id
+    ? Compositor.activeToplevel
     : null
 
     // The window's class / app id ("org.mozilla.firefox", "kitty"...)
@@ -1132,32 +1119,8 @@ PanelWindow {
                 // were actually looking at. Focus this monitor first so the
                 // dispatch always lands where the click happened.
                 //
-                // Hyprland 0.55 replaced the old hyprlang dispatch syntax
-                // ("workspace 5") with Lua calls ("hl.dsp.focus({ workspace =
-                // 5 })") — sending the old form to a Lua-mode Hyprland gets
-                // parsed as raw Lua and fails with a syntax error. Hyprland.usingLua
-                // tells us which one this system is running, so both are
-                // supported. (hl.dsp.focusmonitor has no Lua equivalent yet as
-                // of this writing — that's an upstream gap, not something we
-                // can paper over here — so on a Lua-mode multi-monitor system
-                // this pre-focus step is skipped rather than sent, and only the
-                // workspace switch itself is dispatched.)
-                onWorkspaceRequested: workspace => {
-                    if (NiriWorkspaces.running) {
-                        NiriWorkspaces.focus(win.screen.name, workspace)
-                        return
-                    }
-
-                    if (win.monitor && !win.monitor.focused) {
-                        if (win.usingLua)
-                            console.warn("Bar.qml: no Lua dispatcher for focusmonitor yet — skipping pre-focus on " + win.monitor.name)
-                            else
-                                Hyprland.dispatch("focusmonitor " + win.monitor.name)
-                    }
-                    Hyprland.dispatch(win.usingLua
-                    ? "hl.dsp.focus({ workspace = " + workspace + " })"
-                    : "workspace " + workspace)
-                }
+                // Positions are scoped to the bar's own output.
+                onWorkspaceRequested: workspace => Compositor.focusWorkspace(win.screen.name, workspace)
             }
         }
     }
