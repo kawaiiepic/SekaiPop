@@ -77,6 +77,22 @@ A live Umbriel/Quickshell session is still required to verify visual placement, 
 
 Original shell and assets: [Blapples/SekaiPop](https://github.com/Blapples/SekaiPop). Original documentation and detailed credits are preserved in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md). The `hypr/` configuration and Hyprland helper scripts remain upstream reference material and are not installed or used by this port. GPL-3.0 licensing is unchanged.
 
+## Interactive Engine wallpapers
+
+Engine wallpapers receive desktop clicks and hover by default. SekaiPop's
+transparent wallpaper surface uses an empty input region while Engine is active;
+widgets keep their own input areas. Edit Desktop temporarily restores shell input.
+
+**Settings → Desktop → Wallpaper → Interact with Engine wallpapers** switches
+between renderer interaction and SekaiPop's desktop right-click menu. Wayland
+routes all pointer buttons to one surface, so the background cannot receive Engine
+left-clicks and SekaiPop right-clicks at the same time. Use **Edit Desktop** in that
+settings section, or `qs -c sekaipop ipc call desktopedit open`, to edit widgets.
+The setting applies live and is saved. A custom Engine flags string containing
+`--disable-mouse` must also have that flag removed for renderer interaction.
+This fixes shell-side event interception; actual web input support still depends
+on the installed linux-wallpaperengine build. Keyboard focus is unchanged.
+
 ## Shell themes
 
 In **Settings → Quick → Look → Shell theme**, choose **Cyberpunk** for dark navy

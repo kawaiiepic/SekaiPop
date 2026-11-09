@@ -47,6 +47,15 @@ PanelWindow {
 
     readonly property bool wallpaperEnabled: SettingsService.flag("wallpaper.enabled")
     readonly property bool engineActive: WallpaperService.engineActive
+    // A transparent Wayland surface still receives every pointer event unless
+    // its input region is empty. Disabled MouseAreas alone do not pass events
+    // through to linux-wallpaperengine's separate background surface.
+    readonly property bool enginePointerPassThrough: win.engineActive
+        && SettingsService.flag("wallpaper.engine.interactive") && !EditMode.active
+    mask: Region {
+        width: win.enginePointerPassThrough ? 0 : win.width
+        height: win.enginePointerPassThrough ? 0 : win.height
+    }
     // Image layer is suppressed while linux-wallpaperengine draws the background.
     readonly property bool layerActive: win.wallpaperEnabled && !win.engineActive
     onLayerActiveChanged: {
@@ -784,7 +793,7 @@ PanelWindow {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.RightButton
-        enabled: !EditMode.active
+        enabled: !EditMode.active && !win.enginePointerPassThrough
         onClicked: mouse => EditMode.openMenu(win.screenName, mouse.x, mouse.y)
     }
 }

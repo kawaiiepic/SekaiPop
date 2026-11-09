@@ -29,6 +29,22 @@ SettingsPage {
             onActivated: if (page.host) page.host.wallpapersRequested()
         }
 
+        SettingToggle {
+            icon: "touch_app"
+            label: "Interact with Engine wallpapers"
+            detail: "Clicks and hover reach Engine. Turn off to use the desktop right-click menu instead"
+            checked: SettingsService.flag("wallpaper.engine.interactive")
+            onToggled: SettingsService.toggle("wallpaper.engine.interactive")
+        }
+
+        SettingAction {
+            visible: WallpaperService.engineActive && SettingsService.flag("wallpaper.engine.interactive")
+            icon: "edit"
+            label: "Edit Desktop"
+            detail: "Edit widgets while Engine receives desktop clicks"
+            onActivated: EditMode.open("")
+        }
+
         SettingAction {
             icon: "folder_open"
             label: "Wallpaper folder"
