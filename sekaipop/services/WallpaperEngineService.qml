@@ -69,6 +69,12 @@ Singleton {
 
     Process {
         id: engineProc
+        stdout: SplitParser {
+            onRead: data => console.log("[WallpaperEngine] " + data)
+        }
+        stderr: SplitParser {
+            onRead: data => console.warn("[WallpaperEngine] " + data)
+        }
         onStarted: {
             // Fallbacks for compositor versions without layer PID reporting.
             lateRestack.restart()
