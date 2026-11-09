@@ -77,6 +77,15 @@ A live Umbriel/Quickshell session is still required to verify visual placement, 
 
 Original shell and assets: [Blapples/SekaiPop](https://github.com/Blapples/SekaiPop). Original documentation and detailed credits are preserved in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md). The `hypr/` configuration and Hyprland helper scripts remain upstream reference material and are not installed or used by this port. GPL-3.0 licensing is unchanged.
 
+## Show desktop
+
+The floating dock and bar utility keys include a Show Desktop button. Click once
+to minimize the active workspace's floating windows, and again to restore them,
+using Umbriel's native `workspace-toggle-show-desktop` action. Tiled windows are
+not affected by this compositor action. No opacity or window rules are modified.
+Toggle the dock button in Settings → Desktop → Dock, or the bar key in
+Settings → Bar → Utility keys.
+
 ## Interactive Engine wallpapers
 
 Engine wallpapers receive desktop clicks and hover by default. SekaiPop's

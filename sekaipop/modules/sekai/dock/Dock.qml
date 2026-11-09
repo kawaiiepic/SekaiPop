@@ -367,6 +367,7 @@ PanelWindow {
 
     // The built-in tools (services/PinnedAppsService.qml puts them in the layout).
     readonly property var toolMeta: ({
+        desktop: { label: "Show / restore desktop (floating windows)", icon: "desktop_windows" },
         search: { label: "Search", icon: "search" },
         files: { label: "Files", icon: "folder" },
         clipboard: { label: "Clipboard", icon: "content_paste" },
@@ -491,6 +492,8 @@ PanelWindow {
             out.push(s)
         if (out.length > 0)
             out.push({ kind: "divider", key: "div2" })
+        if (SettingsService.flag("dock.showDesktop"))
+            out.push({ kind: "desktop", key: "desktop", tool: "desktop", displayName: "Show / restore desktop (floating windows)" })
         out.push({ kind: "pin", key: "pin" })
         if (dockWindow.mediaShown) {
             out.push({ kind: "divider", key: "div3" })
@@ -1016,6 +1019,10 @@ PanelWindow {
 
     function buildMenu(r) {
         const rows = []
+        if (r.kind === "desktop") {
+            rows.push({ id: "removedesktop", label: "Hide Show Desktop button", icon: "visibility_off" })
+            return rows
+        }
         if (r.kind === "sep") {
             rows.push({ id: "removesep", label: "Remove separator", icon: "horizontal_rule" })
             return rows
@@ -1144,6 +1151,8 @@ PanelWindow {
         } else if (id === "renamefolder") {
             dockWindow.openFolder(dockWindow.rowItems.indexOf(r))
             Qt.callLater(() => folderCard.beginEdit())
+        } else if (id === "removedesktop") {
+            SettingsService.set("dock.showDesktop", false)
         } else if (id === "removetool") {
             PinnedAppsService.removeAt(r.pinIndex)
         } else if (id.startsWith("addtool:")) {
@@ -1263,6 +1272,11 @@ PanelWindow {
         const r = dockWindow.rowItems[idx]
         if (!r)
             return
+        if (r.kind === "desktop") {
+            dockWindow.closePopups()
+            Compositor.action("workspace-toggle-show-desktop")
+            return
+        }
         if (r.kind === "tool" && (r.tool === "clipboard" || r.tool === "shelf" || r.tool === "timer"
                                   || (r.tool === "files" && FilesStackService.stackOn))) {
             dockWindow.toggleTool(idx, r.tool)
@@ -2237,7 +2251,7 @@ PanelWindow {
             readonly property bool isKey: slot.isApp || slot.isFolder
             readonly property bool isMedia: slot.kind === "media"
             readonly property bool isPin: slot.kind === "pin"
-            readonly property bool isTool: slot.kind === "tool"
+            readonly property bool isTool: slot.kind === "tool" || slot.kind === "desktop"
             readonly property bool isDiv: slot.kind === "divider" || slot.kind === "sep"
             readonly property bool pressable: slot.isKey || slot.isMedia || slot.isPin || slot.isTool
             // Keys that lift / grow under the pointer.

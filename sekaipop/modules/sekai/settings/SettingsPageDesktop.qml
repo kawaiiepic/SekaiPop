@@ -678,6 +678,14 @@ SettingsPage {
         title: "Dock"
 
         SettingToggle {
+            icon: "desktop_windows"
+            label: "Show desktop button"
+            detail: "Hide or restore the active workspace's floating windows"
+            checked: SettingsService.flag("dock.showDesktop")
+            onToggled: SettingsService.toggle("dock.showDesktop")
+        }
+
+        SettingToggle {
             icon: "dock_to_bottom"
             label: "Show dock"
             checked: SettingsService.flag("dock.visible")

@@ -68,6 +68,8 @@ Singleton {
         "util.profile": true,
         "util.record": true,
         "util.wallpapers": true,
+        "util.showDesktop": true,
+        "dock.showDesktop": true,
         // ===== General =====
         "time.use24h": false,
         "weather.fahrenheit": false,
@@ -316,7 +318,7 @@ Singleton {
     // Which bar modules are on, by the names Status_Bar.qml uses. The utility
     // strip counts as off when every one of its keys is.
     readonly property var barModules: {
-        const anyKey = ["screenshot", "colorPicker", "keyboard", "mic", "darkMode", "profile", "record", "wallpapers"]
+        const anyKey = ["screenshot", "colorPicker", "keyboard", "mic", "darkMode", "profile", "record", "wallpapers", "showDesktop"]
             .some(k => root.flag("util." + k))
         return {
             workspaces: root.flag("bar.workspaces"),

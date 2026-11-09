@@ -34,6 +34,7 @@ SettingsPage {
     ]
 
     readonly property var utilKeys: [
+        { key: "util.showDesktop", icon: "desktop_windows", label: "Show desktop" },
         { key: "util.screenshot", icon: "screenshot_region", label: "Screenshot" },
         { key: "util.colorPicker", icon: "colorize", label: "Colour picker" },
         { key: "util.keyboard", icon: "keyboard", label: "Keyboard" },

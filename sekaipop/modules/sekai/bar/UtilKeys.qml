@@ -48,6 +48,18 @@ GridLayout {
     rowSpacing: 0
 
     UtilKey {
+        visible: SettingsService.flag("util.showDesktop")
+        label: "Show / restore desktop (floating windows)"
+        icon: "desktop_windows"
+        keyWidth: grid.keyWidth; keyHeight: grid.keyHeight; iconSize: grid.iconSize
+        tip: grid.tips; barPosition: grid.barPosition
+        onClicked: {
+            Compositor.action("workspace-toggle-show-desktop")
+            grid.closeRequested()
+        }
+    }
+
+    UtilKey {
         visible: SettingsService.flag("util.screenshot")
         label: "Screen snip"
         icon: "screenshot_region"
