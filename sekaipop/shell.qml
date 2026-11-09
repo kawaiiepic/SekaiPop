@@ -48,6 +48,12 @@ ShellRoot {
         WallpaperLayer {}
     }
 
+    // Engine input ownership switch stays available while widgets are hidden.
+    Variants {
+        model: Quickshell.screens
+        EngineInputOverlay {}
+    }
+
     // The framer (PanelImages.frame(): which part of the banner, avatar or phone picture
     // shows). Built only while a picture is being framed, on the monitor it was opened for.
     Variants {

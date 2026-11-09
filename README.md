@@ -92,7 +92,10 @@ while an Engine wallpaper is active. Wayland
 routes all pointer buttons to one surface, so the background cannot receive Engine
 left-clicks and SekaiPop right-clicks at the same time. Use **Edit Desktop** in that
 settings section, or `qs -c sekaipop ipc call desktopedit open`, to edit widgets.
-The setting applies live and is saved. A custom Engine flags string containing
+A small **WE / QS** button stays at the bottom-right of each desktop while Engine
+is active, even when the widgets are hidden. Hover to see the action; click to
+switch click ownership and widget visibility together. It sits below application
+windows and disappears while locked or editing. The setting applies live and is saved. A custom Engine flags string containing
 `--disable-mouse` must also have that flag removed for renderer interaction.
 This fixes shell-side event interception; actual web input support still depends
 on the installed linux-wallpaperengine build. Keyboard focus is unchanged.

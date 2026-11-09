@@ -44,3 +44,12 @@ const loaders = shell.slice(shell.indexOf('id: todoWidgetLoader'), shell.indexOf
 for (const line of loaders.split('\n').filter(line => /^\s*active:/.test(line)))
     assert.match(line, /shellRoot.widgetsAllowed/, 'desktop loader bypasses wallpaper ownership');
 console.log('Engine desktop ownership: input/widget agreement, editing, toggles, stop and all loaders passed');
+
+// The escape hatch must be outside the widget loader gate and share the setting.
+const overlay = fs.readFileSync(path.join(base, 'modules/sekai/background/EngineInputOverlay.qml'), 'utf8');
+assert.match(overlay, /visible: WallpaperService.engineActive && LockState.phase === "idle" && !EditMode.active/);
+assert.doesNotMatch(overlay, /widgetsAllowed/);
+assert.match(overlay, /onClicked: SettingsService.toggle\("wallpaper.engine.interactive"\)/);
+assert.match(overlay, /WlrLayershell.layer: WlrLayer.Bottom/);
+assert.match(shell, /Variants \{\s*model: Quickshell.screens\s*EngineInputOverlay \{\}/);
+console.log('Engine overlay: independent loader, shared toggle, desktop layer and per-screen instances passed');
