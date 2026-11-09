@@ -77,6 +77,17 @@ A live Umbriel/Quickshell session is still required to verify visual placement, 
 
 Original shell and assets: [Blapples/SekaiPop](https://github.com/Blapples/SekaiPop). Original documentation and detailed credits are preserved in [docs/UPSTREAM-README.md](docs/UPSTREAM-README.md). The `hypr/` configuration and Hyprland helper scripts remain upstream reference material and are not installed or used by this port. GPL-3.0 licensing is unchanged.
 
+## Screenshot the current monitor
+
+```sh
+qs -c sekaipop ipc call screenshot monitor
+```
+
+Captures the focused monitor without opening the region picker. Saves a PNG to
+`~/Pictures/Screenshots`, copies it when `wl-copy` is installed, and follows the
+existing screenshot preview setting. Requires `grim`. `region monitor` is an
+alias. The monitor is chosen when invoked; preview UI is hidden before capture.
+
 ## Show desktop
 
 The floating dock and bar utility keys include a Show Desktop button. Click once

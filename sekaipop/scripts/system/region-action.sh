@@ -82,7 +82,7 @@ case "$mode" in
     save)
         png="$1"; dir="${2:-$HOME/Pictures/Screenshots}"
         mkdir -p "$dir" || exit 1
-        f="$dir/screenshot-$(date +%Y-%m-%d_%H-%M-%S).png"
+        f=$(mktemp "$dir/screenshot-$(date +%Y-%m-%d_%H-%M-%S)-XXXXXX.png") || exit 1
         cp "$png" "$f" || exit 1
         have wl-copy && wl-copy --type image/png < "$f"
         notify -i material:photo_camera "Screenshot saved" "$f"

@@ -205,6 +205,25 @@ Singleton {
         root.pump()
     }
 
+    property int monitorShotSerial: 0
+
+    // Resolve the focused output once when invoked, not after the preview has
+    // disappeared: changing focus during that delay must not change the shot.
+    function captureMonitor() {
+        const name = Compositor.focusedMonitor ? Compositor.focusedMonitor.name : ""
+        const screen = name ? Quickshell.screens.find(s => s.name === name) : Quickshell.screens[0]
+        if (!screen) {
+            Quickshell.execDetached(["notify-send", "-a", "sekaipop", "Screenshot", "No focused monitor is available"])
+            return
+        }
+        const token = Date.now() + "-monitor-" + (++root.monitorShotSerial)
+        root.jobs.push({ monitor: screen.name, act: "save",
+            out: root.tmpDir + "/crop-" + token + ".png",
+            preview: SettingsService.flag("region.preview"), previewOk: false,
+            previewOut: root.tmpDir + "/preview-" + token + ".png", screenName: screen.name })
+        root.pump()
+    }
+
     // One job at a time (crop, then act), so a quick second pick queues.
     property var jobs: []
     property var current: null
@@ -214,8 +233,39 @@ Singleton {
             return
         root.current = root.jobs.shift()
         const j = root.current
+        if (j.monitor) {
+            openTimer.stop()
+            laterTimer.stop()
+            root.hide()
+            root.hidePreview(true)
+            monitorCaptureDelay.restart()
+            return
+        }
         cropper.exec(["sh", root.script, "crop", j.picture, String(j.x), String(j.y),
                       String(j.w), String(j.h), String(j.scale), j.out])
+    }
+
+    Timer {
+        id: monitorCaptureDelay
+        interval: 180
+        onTriggered: {
+            const j = root.current
+            if (j && j.monitor)
+                monitorCapture.exec(["sh", root.script, "capture", j.monitor, j.out])
+        }
+    }
+    Process {
+        id: monitorCapture
+        onExited: code => {
+            const j = root.current
+            if (j && code === 0)
+                root.afterCrop(j)
+            else {
+                Quickshell.execDetached(["notify-send", "-a", "sekaipop", "Screenshot",
+                    "Couldn't capture the monitor (check grim and the output connection)"])
+                root.finishJob(false)
+            }
+        }
     }
 
     Process {
@@ -395,9 +445,15 @@ Singleton {
     }
 
     IpcHandler {
+        target: "screenshot"
+        function monitor(): void { root.captureMonitor() }
+    }
+
+    IpcHandler {
         target: "region"
 
         function screenshot(): void { root.show("copy", "") }
+        function monitor(): void { root.captureMonitor() }
         function save(): void { root.show("save", "") }
         function ocr(): void { root.show("ocr", "") }
         function search(): void { root.show("search", "") }
